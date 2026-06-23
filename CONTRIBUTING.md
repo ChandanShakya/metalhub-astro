@@ -13,17 +13,22 @@ bun run dev
 
 # 3. Make your changes
 
-# 4. Verify the build succeeds
+# 4. Lint and format your code
+bun run lint:fix
+
+# 5. Verify the build succeeds
 bun run build
 
-# 5. Preview the production build
+# 6. Preview the production build
 bun run preview
 
-# 6. Commit and push (triggers Cloudflare Pages rebuild)
+# 7. Commit and push (triggers Cloudflare Pages rebuild)
 git add <files>
 git commit -m "Description of change"
 git push
 ```
+
+Formatting and linting run automatically on commit via pre-commit hooks (husky + lint-staged). If a commit is rejected, run `bun run lint:fix` and try again.
 
 ## Project Conventions
 
@@ -205,8 +210,34 @@ The cart uses `localStorage` with key `metalhub-cart`. See `src/lib/cart.ts` for
 
 There is no test framework configured. Verify changes by:
 
-1. `bun run build` — ensure no build errors
-2. `bun run dev` — check all pages render correctly
-3. Test all 3 locales (EN, NE, Newa)
-4. Test the full flow: browse → add to cart → checkout → WhatsApp/Messenger link
-5. Test CMS at `http://localhost:4321/admin` (requires the auth Worker running locally or in production)
+1. `bun run lint` — check for lint/format issues
+2. `bun run build` — ensure no build errors
+3. `bun run astro check` — ensure no TypeScript errors
+4. `bun run dev` — check all pages render correctly
+5. Test all 3 locales (EN, NE, Newa)
+6. Test the full flow: browse → add to cart → checkout → WhatsApp/Messenger link
+7. Test CMS at `http://localhost:4321/admin` (requires the auth Worker running locally or in production)
+
+## Linting & Formatting
+
+The project uses [Biome](https://biomejs.dev) for linting and formatting:
+
+| Command | Action |
+|---------|--------|
+| `bun run lint` | Check for lint/format issues |
+| `bun run lint:fix` | Auto-fix lint and format issues |
+| `bun run format` | Format all files (4-space indent, double quotes, semicolons) |
+
+### Configuration
+
+- **biome.json** — formatter (4-space indent, 120 line width), linter (recommended rules), import sorting
+- **.husky/pre-commit** — runs lint-staged on commit
+- **lint-staged** — applies `biome check --write` to staged `.astro`, `.ts`, `.js`, `.json`, `.css` files
+
+### Style conventions
+
+- 4-space indentation (enforced by Biome)
+- Double quotes in JS/TS and HTML attributes
+- Semicolons always
+- 2-space indentation in CSS (Biome default for CSS)
+- Import sorting handled automatically by Biome

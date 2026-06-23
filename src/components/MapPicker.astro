@@ -1,83 +1,145 @@
 ---
+import type { Locale } from "../lib/i18n";
+import { getTranslations } from "../lib/i18n";
+
 interface Props {
-  locale: string;
+    locale: Locale;
 }
 const { locale } = Astro.props;
+const t = getTranslations(locale);
 ---
 
-<div class="form-group">
-  <label for="map">{locale === 'en' ? 'Delivery Point (tap the map)' : locale === 'ne' ? 'डेलिभरी बिन्दु (नक्सामा ट्याप गर्नुहोस्)' : 'डेलिभरी स्थान (नक्सा ट्याप)'}</label>
-  <div id="map" class="map-container"></div>
-  <div id="map-status" class="map-status"></div>
+<div class="mb-4">
+  <label for="map" class="block font-semibold text-sm mb-2 text-text-1">{t("checkout.deliveryPoint")}</label>
+  <div id="map" class="w-full h-[420px] border border-border rounded-xl mb-2 relative"></div>
+  <div id="map-status" class="text-sm min-h-5 font-medium"></div>
 </div>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" media="print" onload="this.media='all'" />
-<noscript><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" /></noscript>
+<input type="hidden" id="delivery-lat" />
+<input type="hidden" id="delivery-lng" />
 
-<script>
-  const STORAGE_KEY = 'metalhub-customer';
+<script is:inline define:vars={{ locale }}>
+  var STORAGE_KEY = "metalhub-customer";
+  var PIN_SET_MSG = {
+    en: "Pin set \u2014 tap Order to continue",
+    ne: "\u092a\u093f\u0928 \u0938\u0947\u091f \u092d\u092f\u094b \u2014 \u0905\u0930\u094d\u0921\u0930 \u0917\u0930\u094d\u0928 \u091f\u094d\u092f\u093e\u092a \u0917\u0930\u094d\u0928\u0941\u0939\u094b\u0938\u094d",
+    newa: "\u092a\u093f\u0928 \u0938\u0947\u091f \u092d\u092f \u2014 \u0905\u0938\u094d\u0935 \u091f\u094d\u092f\u093e\u092a"
+  };
+  var LOAD_ERR = {
+    en: "Failed to load map. Please check your connection.",
+    ne: "\u0928\u0915\u094d\u0938\u093e \u0932\u094b\u0921 \u0917\u0930\u094d\u0928 \u0938\u0915\u094d\u092f\u094b\u0928\u0964 \u0915\u0943\u092a\u092f\u093e \u0906\u092B\u094d\u0928\u093e \u0915\u091c\u0932\u0947\u0938\u094d \u091a\u094d\u091f\u094d\u0928\u0941\u0939\u094b\u0938\u094d\u0964",
+    newa: "\u0928\u0915\u094d\u0938\u093e \u0932\u094b\u0921 \u0917\u0930\u094d\u0928 \u0938\u0915\u094d\u092f\u094b\u0928\u0964 \u0916\u093e\u0938 \u0915\u091c\u0932\u0947\u0938\u094d \u091a\u094d\u091f\u094d\u0928\u0941\u0939\u094b\u0938\u094d\u0964"
+  };
 
   function loadCustomer() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { return {}; }
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch { return {}; }
   }
 
-  document.addEventListener('astro:page-load', () => {
-    const mapEl = document.getElementById('map');
-    const statusEl = document.getElementById('map-status');
+  function loadCSS(href) {
+    if (!document.querySelector('link[href="' + href + '"]')) {
+      var link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = href;
+      document.head.appendChild(link);
+    }
+  }
+
+  function loadJS(src, callback, errCallback) {
+    if (window.L && src.indexOf("leaflet@") > -1 && src.indexOf("Control.Geocoder") === -1) { callback(); return; }
+    if (document.querySelector('script[src="' + src + '"]')) {
+      var check = setInterval(function() {
+        if (src.indexOf("Control.Geocoder") > -1 && window.L && window.L.Control && window.L.Control.Geocoder) { clearInterval(check); callback(); }
+        else if (src.indexOf("leaflet@") > -1 && src.indexOf("Control.Geocoder") === -1 && window.L) { clearInterval(check); callback(); }
+      }, 100);
+      setTimeout(function() { clearInterval(check); if (errCallback) errCallback(); }, 10000);
+      return;
+    }
+    var script = document.createElement("script");
+    script.src = src;
+    script.onload = callback;
+    script.onerror = function() { if (errCallback) errCallback(); };
+    document.head.appendChild(script);
+  }
+
+  document.addEventListener("astro:page-load", function() {
+    var mapEl = document.getElementById("map");
+    var statusEl = document.getElementById("map-status");
     if (!mapEl || mapEl.dataset.initialized) return;
 
-    const observer = new IntersectionObserver((entries) => {
+    var observer = new IntersectionObserver(function(entries) {
       if (entries[0].isIntersecting) {
         observer.disconnect();
-        mapEl.dataset.initialized = 'true';
-        initMap(mapEl, statusEl);
+        mapEl.dataset.initialized = "true";
+        loadCSS("https://unpkg.com/leaflet@1.9.4/dist/leaflet.css");
+        loadCSS("https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.css");
+        loadJS("https://unpkg.com/leaflet@1.9.4/dist/leaflet.js", function() {
+          loadJS("https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.js", function() {
+            initMap(mapEl, statusEl);
+          }, function() {
+            statusEl.textContent = LOAD_ERR[locale] || LOAD_ERR.en;
+            statusEl.classList.add("text-sale");
+          });
+        }, function() {
+          statusEl.textContent = LOAD_ERR[locale] || LOAD_ERR.en;
+          statusEl.classList.add("text-sale");
+        });
       }
-    }, { rootMargin: '200px' });
+    }, { rootMargin: "200px" });
     observer.observe(mapEl);
   });
 
-  async function initMap(mapEl, statusEl) {
-    const L = await import('leaflet');
+  function initMap(mapEl, statusEl) {
+    var L = window.L;
+    var saved = loadCustomer();
+    var hasSaved = saved.lat && saved.lng;
+    var center = hasSaved ? [parseFloat(saved.lat), parseFloat(saved.lng)] : [27.7172, 85.3240];
+    var zoom = hasSaved ? 14 : 12;
+    var map = L.map(mapEl).setView(center, zoom);
 
-    const saved = loadCustomer();
-    const hasSaved = saved.lat && saved.lng;
-    const center = hasSaved ? [parseFloat(saved.lat), parseFloat(saved.lng)] : [27.7172, 85.3240];
-    const zoom = hasSaved ? 14 : 12;
+    setTimeout(function() { map.invalidateSize(); }, 500);
 
-    const map = L.map(mapEl).setView(center, zoom);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "\u00a9 <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a>"
     }).addTo(map);
 
-    let marker = null;
+    var geocoder = L.Control.Geocoder.nominatim({
+      geocodingQueryParams: { countrycodes: "np" }
+    });
+    new L.Control.Geocoder({
+      geocoder: geocoder,
+      position: "topright",
+      placeholder: locale === "en" ? "Search location..." : locale === "ne" ? "\u0938\u094d\u0925\u093e\u0928 \u0916\u094b\u091c\u094d\u0928\u0941\u0939\u094b\u0938\u094d..." : "\u0938\u094d\u0925\u093e\u0928 \u0916\u094b\u091c\u094d\u0928\u093e...",
+      defaultMarkGeocode: false
+    }).addTo(map);
+
+    map.on("geocoder-markgeocode", function(e) {
+      if (e.geocode && e.geocode.center) {
+        setMarker(e.geocode.center);
+        map.setView(e.geocode.center, 16);
+      }
+    });
+
+    var marker = null;
 
     function setMarker(latlng) {
       if (marker) map.removeLayer(marker);
       marker = L.marker(latlng).addTo(map);
 
-      const input = document.getElementById('delivery-lat');
-      const inputLng = document.getElementById('delivery-lng');
-      if (input) input.value = latlng.lat;
-      if (inputLng) inputLng.value = latlng.lng;
+      var input = document.getElementById("delivery-lat");
+      var inputLng = document.getElementById("delivery-lng");
+      if (input) input.value = String(latlng.lat);
+      if (inputLng) inputLng.value = String(latlng.lng);
 
-      if (typeof window.__saveCustomerLocation === 'function') {
+      if (typeof window.__saveCustomerLocation === "function") {
         window.__saveCustomerLocation();
       }
 
-      statusEl.textContent = 'Pin set \u2014 tap Order to continue';
-      statusEl.style.color = 'var(--color-success)';
+      statusEl.textContent = PIN_SET_MSG[locale] || PIN_SET_MSG.en;
+      statusEl.classList.add("text-success");
+      statusEl.classList.remove("text-sale");
     }
 
-    if (hasSaved) {
-      setMarker(L.latLng(center[0], center[1]));
-    }
-
-    map.on('click', function(e) {
-      setMarker(e.latlng);
-    });
+    if (hasSaved) setMarker(L.latLng(center[0], center[1]));
+    map.on("click", function(e) { setMarker(e.latlng); });
   }
 </script>
-
-<input type="hidden" id="delivery-lat" />
-<input type="hidden" id="delivery-lng" />

@@ -1,0 +1,168 @@
+---
+import { getCollection } from "astro:content";
+import ProductCard from "../../../components/ProductCard.astro";
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import { getTranslations, locales } from "../../../lib/i18n";
+import { calculatePrice } from "../../../lib/pricing";
+
+export function getStaticPaths() {
+    return locales.map((locale) => ({
+        params: { locale: locale === "en" ? undefined : locale },
+        props: { locale },
+    }));
+}
+
+const { locale } = Astro.props;
+const t = getTranslations(locale);
+
+const PER_PAGE = 9;
+
+const products = await getCollection("products");
+const categories = await getCollection("categories");
+const sortedCategories = categories.sort((a, b) => a.data.order - b.data.order);
+const totalPages = Math.ceil(products.length / PER_PAGE);
+---
+<BaseLayout title={t("products.title")} locale={locale}>
+  <section class="py-8 container mx-auto px-4">
+    <h1 class="text-2xl font-bold mb-5">{t("products.title")}</h1>
+
+    {products.length === 0 ? (
+      <p class="text-center py-12 text-text-3">{t("products.noProducts")}</p>
+    ) : (
+      <>
+        {sortedCategories.length > 0 && (
+          <div class="flex gap-2 flex-wrap mb-6">
+            <button class="filter-btn active bg-surface-2 border border-border rounded-full px-3.5 py-1.5 cursor-pointer text-sm font-medium transition-[colors,transform] text-text-2 hover:border-accent hover:text-accent" data-category="all">{t("products.all")}</button>
+            {sortedCategories.map((cat) => (
+              <button class="filter-btn bg-surface-2 border border-border rounded-full px-3.5 py-1.5 cursor-pointer text-sm font-medium transition-[colors,transform] text-text-2 hover:border-accent hover:text-accent" data-category={cat.data.slug}>
+                {cat.data.icon} {cat.data.name[locale as keyof typeof cat.data.name] || cat.data.name.en}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6" id="product-grid" data-per-page={String(PER_PAGE)}>
+          {products.map((product, i) => {
+            const result = calculatePrice(product.data.basePrice, [], product.data.discount, []);
+            const pageNum = Math.floor(i / PER_PAGE) + 1;
+            return (
+              <div class:list={["product-item", { "hidden": pageNum > 1 }]} data-category={product.data.category} data-page={String(pageNum)}>
+                <ProductCard
+                  slug={product.data.slug}
+                  name={product.data.name[locale as keyof typeof product.data.name] || product.data.name.en}
+                  category={product.data.category}
+                  image={product.data.images[0] || "/images/products/placeholder.jpg"}
+                  price={result.discountedPrice}
+                  originalPrice={result.originalPrice}
+                  hasDiscount={result.hasDiscount}
+                  discountLabel={result.discountLabel}
+                  inStock={product.data.inStock}
+                  locale={locale}
+                />
+              </div>
+            );
+          })}
+        </div>
+
+        {totalPages > 1 && (
+          <div class="text-center mt-8">
+            <button id="load-more-btn" class="bg-surface-2 border border-border rounded-xl px-6 py-3 text-sm font-semibold cursor-pointer transition-[colors,transform] text-text-2 hover:border-accent hover:text-accent hover:bg-surface-3">
+              Load More
+            </button>
+            <p id="load-more-info" class="text-xs text-text-3 mt-2"></p>
+          </div>
+        )}
+      </>
+    )}
+  </section>
+
+  <script>
+    var _productsAbort: AbortController | null = null;
+
+    function initFiltersAndPagination() {
+      if (_productsAbort) _productsAbort.abort();
+      _productsAbort = new AbortController();
+      var signal = _productsAbort.signal;
+
+      var grid = document.getElementById("product-grid");
+      var perPage = parseInt(grid?.getAttribute("data-per-page") || "9");
+      var currentPage = 1;
+
+      document.querySelectorAll(".filter-btn").forEach(btn => {
+        btn.addEventListener("click", function(this: HTMLButtonElement) {
+          document.querySelectorAll(".filter-btn").forEach(b => {
+            b.classList.remove("active", "bg-accent", "text-white", "border-accent");
+            b.classList.add("bg-surface-2", "text-text-2", "border-border");
+          });
+          this.classList.add("active", "bg-accent", "text-white", "border-accent");
+          this.classList.remove("bg-surface-2", "text-text-2", "border-border");
+
+          var cat = this.dataset.category;
+          var visibleCount = 0;
+          document.querySelectorAll(".product-item").forEach(item => {
+            var el = item as HTMLElement;
+            var matchCat = cat === "all" || el.dataset.category === cat;
+            if (matchCat) {
+              visibleCount++;
+              if (visibleCount <= perPage * currentPage) {
+                el.classList.remove("hidden");
+              } else {
+                el.classList.add("hidden");
+              }
+            } else {
+              el.classList.add("hidden");
+            }
+          });
+
+          var loadMoreBtn = document.getElementById("load-more-btn");
+          var loadMoreInfo = document.getElementById("load-more-info");
+          var totalMatch = document.querySelectorAll(".product-item").length;
+          if (loadMoreBtn) {
+            loadMoreBtn.classList.toggle("hidden", visibleCount <= perPage * currentPage);
+          }
+          if (loadMoreInfo) {
+            loadMoreInfo.textContent = "Showing " + Math.min(visibleCount, perPage * currentPage) + " of " + totalMatch + " products";
+          }
+        }, { signal });
+      });
+
+      var loadMoreBtn = document.getElementById("load-more-btn");
+      if (loadMoreBtn) {
+        loadMoreBtn.addEventListener("click", function() {
+          currentPage++;
+          var visibleCount = 0;
+          var activeFilter = document.querySelector(".filter-btn.active") as HTMLButtonElement;
+          var cat = activeFilter?.dataset.category || "all";
+
+          document.querySelectorAll(".product-item").forEach(item => {
+            var el = item as HTMLElement;
+            var matchCat = cat === "all" || el.dataset.category === cat;
+            if (matchCat) {
+              visibleCount++;
+              if (visibleCount <= perPage * currentPage) {
+                el.classList.remove("hidden");
+              }
+            }
+          });
+
+          var totalVisible = document.querySelectorAll(".product-item:not(.hidden)").length;
+          var totalMatch = document.querySelectorAll(".product-item").length;
+          if (loadMoreBtn && visibleCount <= perPage * currentPage) {
+            loadMoreBtn.classList.add("hidden");
+          }
+          var loadMoreInfo = document.getElementById("load-more-info");
+          if (loadMoreInfo) {
+            loadMoreInfo.textContent = "Showing " + totalVisible + " of " + totalMatch + " products";
+          }
+        }, { signal });
+      }
+
+      var urlParams = new URLSearchParams(window.location.search);
+      var initialCat = urlParams.get("category") || "all";
+      var activeBtn = document.querySelector(`.filter-btn[data-category="${initialCat}"]`) as HTMLButtonElement | null;
+      if (activeBtn) activeBtn.click();
+    }
+
+    document.addEventListener("astro:page-load", initFiltersAndPagination);
+  </script>
+</BaseLayout>

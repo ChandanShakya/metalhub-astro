@@ -1,36 +1,36 @@
 ---
-import { formatPrice } from '../lib/pricing';
-import { getTranslations, localizedPath } from '../lib/i18n';
+import { getTranslations, type Locale, localizedPath } from "../lib/i18n";
+import { formatPrice } from "../lib/pricing";
 
 interface Props {
-  slug: string;
-  name: string;
-  category: string;
-  image: string;
-  price: number;
-  originalPrice: number;
-  hasDiscount: boolean;
-  discountLabel: string;
-  inStock: boolean;
-  locale: string;
+    slug: string;
+    name: string;
+    category: string;
+    image: string;
+    price: number;
+    originalPrice: number;
+    hasDiscount: boolean;
+    discountLabel: string;
+    inStock: boolean;
+    locale: Locale;
 }
 
 const { slug, name, category, image, price, originalPrice, hasDiscount, discountLabel, inStock, locale } = Astro.props;
-const t = getTranslations(locale as any);
+const t = getTranslations(locale);
 ---
-<a href={localizedPath(`/products/${slug}/`, locale as any)} class="product-card" style="text-decoration:none;color:inherit;">
-  <img src={image} alt={name} class="product-card-img" loading="lazy" />
-  <div class="product-card-body">
-    <h3>
+<a href={localizedPath(`/products/${slug}/`, locale)} class="block bg-surface-2 border border-border rounded-xl overflow-hidden no-underline text-inherit transition-[colors,transform] duration-300 [perspective:800px] hover:-translate-y-1 hover:rotate-x-[1.5deg] hover:shadow-[0_20px_40px_-10px_rgb(15_23_42/0.15)]">
+  <img src={image} alt={name} class="w-full h-48 md:h-64 object-cover bg-gradient-to-br from-surface-3 to-border" loading="lazy" decoding="async" width="400" height="300" />
+  <div class="p-4">
+    <h3 class="text-base font-semibold mb-1 flex items-center flex-wrap gap-1.5">
       {name}
-      {hasDiscount && <span class="sale-badge">{t('products.sale')}</span>}
-      {!inStock && <span class="oos-badge">{t('products.outOfStock')}</span>}
+      {hasDiscount && <span class="inline-flex items-center bg-sale text-white text-[0.62rem] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">{t("products.sale")}</span>}
+      {!inStock && <span class="inline-flex items-center bg-text-3 text-white text-[0.62rem] font-bold px-1.5 py-0.5 rounded uppercase">{t("products.outOfStock")}</span>}
     </h3>
-    <div class="category">{category}</div>
-    <div class="price">
+    <div class="text-xs text-text-3 mb-2 capitalize">{category}</div>
+    <div class="font-bold text-base text-accent-dark">
       {formatPrice(price)}
-      {hasDiscount && <span class="price-original">{formatPrice(originalPrice)}</span>}
-      {hasDiscount && <span class="sale-badge">{discountLabel}</span>}
+      {hasDiscount && <span class="line-through text-text-3 font-normal text-sm ml-1">{formatPrice(originalPrice)}</span>}
+      {hasDiscount && <span class="inline-flex items-center bg-sale text-white text-[0.62rem] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide ml-1">{discountLabel}</span>}
     </div>
   </div>
 </a>

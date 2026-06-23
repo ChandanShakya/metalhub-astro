@@ -1,75 +1,90 @@
 ---
 interface Props {
-  locale: string;
+    locale: string;
+    showCheckoutLink?: boolean;
 }
-const { locale } = Astro.props;
+const { locale, showCheckoutLink = true } = Astro.props;
 ---
+
 <div id="cart-widget">
-  <div class="cart-section container">
-    <h2 data-i18n="cart.title">Your Cart</h2>
+  <div class="mx-auto max-w-site px-4 py-8">
+    <h2 id="cart-title" class="text-2xl font-bold mb-5"></h2>
     <div id="cart-items"></div>
     <div id="cart-subtotal"></div>
-    <div id="cart-empty" class="cart-empty" data-i18n="cart.empty">Your cart is empty</div>
+    <div id="cart-empty" class="text-center py-12 text-text-3"></div>
   </div>
 </div>
 
-<script define:vars={{ locale }}>
+<script is:inline define:vars={{ locale, showCheckoutLink }}>
   const i18n = {
-    en: { cart: "Your Cart", empty: "Your cart is empty", subtotal: "Subtotal", remove: "Remove", checkout: "Checkout" },
-    ne: { cart: "तपाईंको कार्ट", empty: "तपाईंको कार्ट खाली छ", subtotal: "उपकुल", remove: "हटाउनुहोस्", checkout: "चेकआउट" },
-    newa: { cart: "छिग्व म्हिग्व", empty: "छिग्व म्हिग्व असः खाली", subtotal: "जोड", remove: "असः दू", checkout: "म्हिग्व असः" }
+    en: { title: "Your Cart", empty: "Your cart is empty", subtotal: "Subtotal", remove: "Remove", checkout: "Checkout" },
+    ne: { title: "तपाईंको कार्ट", empty: "तपाईंको कार्ट खाली छ", subtotal: "उपकुल", remove: "हटाउनुहोस्", checkout: "चेकआउट" },
+    newa: { title: "छिग्व म्हिग्व", empty: "छिग्व म्हिग्व असः खाली", subtotal: "जोड", remove: "असः दू", checkout: "म्हिग्व असः" }
   };
   const t = (key) => (i18n[locale] || i18n.en)[key] || key;
-  const CART_KEY = 'metalhub-cart';
+  const CART_KEY = "metalhub-cart";
 
   function getCart() {
-    try { return JSON.parse(localStorage.getItem(CART_KEY) || '[]'); } catch { return []; }
+    try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); } catch { return []; }
   }
-  function saveCart(items) { localStorage.setItem(CART_KEY, JSON.stringify(items)); }
+  function saveCart(items) {
+    localStorage.setItem(CART_KEY, JSON.stringify(items));
+    window.dispatchEvent(new Event("cart-updated"));
+  }
 
   function render() {
     const cart = getCart();
-    const container = document.getElementById('cart-items');
-    const subtotalEl = document.getElementById('cart-subtotal');
-    const emptyEl = document.getElementById('cart-empty');
-    if (!container || !subtotalEl || !emptyEl) return;
+    const container = document.getElementById("cart-items");
+    const subtotalEl = document.getElementById("cart-subtotal");
+    const emptyEl = document.getElementById("cart-empty");
+    const titleEl = document.getElementById("cart-title");
+    if (!container || !subtotalEl || !emptyEl || !titleEl) return;
+
+    titleEl.textContent = t("title");
 
     if (cart.length === 0) {
-      container.innerHTML = '';
-      subtotalEl.innerHTML = '';
-      emptyEl.style.display = 'block';
+      container.innerHTML = "";
+      subtotalEl.innerHTML = "";
+      emptyEl.textContent = t("empty");
+      emptyEl.classList.remove("hidden");
       return;
     }
 
-    emptyEl.style.display = 'none';
+    emptyEl.classList.add("hidden");
     let subtotal = 0;
 
-    container.innerHTML = cart.map((item, i) => {
+    container.innerHTML = '<div class="space-y-4">' + cart.map((item, i) => {
       subtotal += item.unitPrice * item.qty;
-      const options = Object.entries(item.selectedOptions || {}).map(([k,v]) => `${k}: ${v}`).join(', ');
-      return `
-        <div class="cart-item">
-          <div class="cart-item-info">
-            <p class="cart-item-name">${item.name}</p>
-            ${options ? `<div class="options">${options}</div>` : ''}
-            <div>NPR ${item.unitPrice.toLocaleString()} \u00d7 ${item.qty} = NPR ${(item.unitPrice * item.qty).toLocaleString()}</div>
-          </div>
-          <div class="cart-item-actions">
-            <button onclick="window.__cartUpdateQty(${i}, ${item.qty - 1})" aria-label="Decrease quantity">\u2212</button>
-            <span class="qty" aria-label="Quantity">${item.qty}</span>
-            <button onclick="window.__cartUpdateQty(${i}, ${item.qty + 1})" aria-label="Increase quantity">+</button>
-            <button class="remove-btn" onclick="window.__cartRemoveItem(${i})" aria-label="Remove item">\u00d7</button>
-          </div>
-        </div>`;
-    }).join('');
+      const options = Object.entries(item.selectedOptions || {}).map(([k,v]) => k + ": " + v).join(", ");
+      var imgSrc = (item.images && item.images.length > 0) ? item.images[0] : (item.image || "");
+      var imgHtml = imgSrc
+        ? '<img src="' + imgSrc + '" alt="' + item.name + '" class="w-16 h-16 object-cover rounded-lg shrink-0" loading="lazy" decoding="async" />'
+        : '<div class="w-16 h-16 rounded-lg bg-gradient-to-br from-surface-3 to-border shrink-0 flex items-center justify-center text-text-3 text-xs">No img</div>';
+      var productHref = (locale === "en" ? "/products/" : "/" + locale + "/products/") + item.slug + "/" + (Object.keys(item.selectedOptions || {}).length > 0 ? "?" + new URLSearchParams(item.selectedOptions).toString() : "");
+      return '<div class="flex items-center gap-4 p-4 bg-surface-2 border border-border rounded-xl">' +
+        imgHtml +
+        '<div class="flex-1 min-w-0">' +
+          '<a href="' + productHref + '" class="text-base font-semibold mb-0.5 truncate block text-text-1 no-underline hover:text-accent transition-colors">' + item.name + '</a>' +
+          (options ? '<p class="text-xs text-text-3 truncate">' + options + '</p>' : '') +
+          '<p class="text-sm text-text-2 mt-1">NPR ' + item.unitPrice.toLocaleString() + ' \u00d7 ' + item.qty + ' = <span class="font-semibold text-accent-dark">NPR ' + (item.unitPrice * item.qty).toLocaleString() + '</span></p>' +
+        '</div>' +
+        '<div class="flex items-center gap-1.5 shrink-0">' +
+          '<button onclick="window.__cartUpdateQty(' + i + ', ' + (item.qty - 1) + ')" class="w-7 h-7 flex items-center justify-center border border-border rounded-md bg-surface-2 cursor-pointer transition-colors hover:border-accent hover:text-accent text-sm">\u2212</button>' +
+          '<span class="w-7 text-center text-sm font-bold">' + item.qty + '</span>' +
+          '<button onclick="window.__cartUpdateQty(' + i + ', ' + (item.qty + 1) + ')" class="w-7 h-7 flex items-center justify-center border border-border rounded-md bg-surface-2 cursor-pointer transition-colors hover:border-accent hover:text-accent text-sm">+</button>' +
+          '<button class="w-7 h-7 flex items-center justify-center border border-sale rounded-md bg-surface-2 text-sale cursor-pointer transition-colors hover:bg-sale hover:text-white text-sm ml-1" onclick="window.__cartRemoveItem(' + i + ')">\u00d7</button>' +
+        '</div>' +
+      '</div>';
+    }).join("") + '</div>';
 
-    subtotalEl.innerHTML = `
-      <div class="cart-subtotal">
-        <span>${t('subtotal')}</span>
-        <span>NPR ${subtotal.toLocaleString()}</span>
-      </div>
-      <a href="/${locale === 'en' ? '' : locale + '/'}checkout/" class="btn-checkout" style="text-align:center;display:block;text-decoration:none;">${t('checkout')}</a>
-    `;
+    const checkoutHref = locale === "en" ? "/checkout/" : "/" + locale + "/checkout/";
+    const checkoutBtn = showCheckoutLink ? '<a href="' + checkoutHref + '" class="mt-4 inline-flex items-center justify-center w-full bg-success text-white border-none rounded-xl py-3 px-6 text-base font-semibold cursor-pointer no-underline transition-[colors,transform] hover:bg-green-800 hover:-translate-y-0.5">' + t("checkout") + '</a>' : "";
+    subtotalEl.innerHTML =
+      '<div class="flex justify-between items-center text-xl font-extrabold py-5 border-t-2 border-border mt-2">' +
+        '<span>' + t("subtotal") + '</span>' +
+        '<span>NPR ' + subtotal.toLocaleString() + '</span>' +
+      '</div>' +
+      checkoutBtn;
   }
 
   window.__cartUpdateQty = function(index, qty) {
@@ -88,6 +103,6 @@ const { locale } = Astro.props;
     render();
   };
 
-  document.addEventListener('astro:page-load', render);
+  document.addEventListener("astro:page-load", render);
   render();
 </script>

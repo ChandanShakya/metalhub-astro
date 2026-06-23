@@ -1,0 +1,87 @@
+---
+import { getCollection } from "astro:content";
+import CartWidget from "../../components/CartWidget.astro";
+import MapPicker from "../../components/MapPicker.astro";
+import OrderButtons from "../../components/OrderButtons.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getTranslations, locales } from "../../lib/i18n";
+
+export function getStaticPaths() {
+    return locales.map((locale) => ({
+        params: { locale: locale === "en" ? undefined : locale },
+        props: { locale },
+    }));
+}
+
+const { locale } = Astro.props;
+const t = getTranslations(locale);
+
+const settingsEntries = await getCollection("settings");
+const settings = settingsEntries[0]?.data || { whatsappNumber: "9779861760709", messengerPage: "metalhub.np" };
+---
+<BaseLayout title={t("checkout.title")} locale={locale}>
+  <section class="py-8 max-w-[800px] mx-auto px-4">
+    <h1 class="text-2xl font-bold mb-5">{t("checkout.title")}</h1>
+
+    <CartWidget locale={locale} showCheckoutLink={false} />
+
+    <div class="mt-8">
+      <h2 class="sr-only">{t("checkout.customerInfo")}</h2>
+      <div class="mb-4">
+        <label for="customer-name" class="block font-semibold text-sm mb-1.5 text-text-1">{t("checkout.name")} <span class="text-sale">*</span></label>
+        <input type="text" id="customer-name" required minlength="2" autocomplete="name" class="w-full py-2.5 px-3.5 border-[1.5px] border-border rounded-lg text-base font-[inherit] transition-[colors,transform] focus:outline-none focus:border-accent focus:shadow-[0_0_0_3px_rgb(180_83_9/0.1)] bg-surface-2 text-text-1" />
+      </div>
+
+      <div class="mb-4">
+        <label for="customer-phone" class="block font-semibold text-sm mb-1.5 text-text-1">{t("checkout.phone")} <span class="text-sale">*</span></label>
+        <input type="tel" id="customer-phone" required pattern="[0-9]{10}" maxlength="10" autocomplete="tel" placeholder="98XXXXXXXX" class="w-full py-2.5 px-3.5 border-[1.5px] border-border rounded-lg text-base font-[inherit] transition-[colors,transform] focus:outline-none focus:border-accent focus:shadow-[0_0_0_3px_rgb(180_83_9/0.1)] bg-surface-2 text-text-1" />
+      </div>
+
+      <div class="mb-4">
+        <label for="customer-note" class="block font-semibold text-sm mb-1.5 text-text-1">{t("checkout.note")}</label>
+        <textarea id="customer-note" placeholder={t("checkout.notePlaceholder")} class="w-full py-2.5 px-3.5 border-[1.5px] border-border rounded-lg text-base font-[inherit] transition-[colors,transform] focus:outline-none focus:border-accent focus:shadow-[0_0_0_3px_rgb(180_83_9/0.1)] bg-surface-2 text-text-1 resize-y min-h-[70px]"></textarea>
+      </div>
+
+      <MapPicker locale={locale} />
+
+      <OrderButtons locale={locale} whatsappNumber={settings.whatsappNumber} messengerPage={settings.messengerPage} />
+    </div>
+  </section>
+
+  <script>
+    const STORAGE_KEY = "metalhub-customer";
+
+    function loadCustomer() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch { return {}; }
+    }
+
+    function saveCustomer() {
+      const data = {
+        name: (document.getElementById("customer-name") as HTMLInputElement | null)?.value || "",
+        phone: (document.getElementById("customer-phone") as HTMLInputElement | null)?.value || "",
+        lat: (document.getElementById("delivery-lat") as HTMLInputElement | null)?.value || "",
+        lng: (document.getElementById("delivery-lng") as HTMLInputElement | null)?.value || "",
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      window.dispatchEvent(new Event("checkout-field-changed"));
+    }
+
+    function restoreFields() {
+      const data = loadCustomer();
+      const nameEl = document.getElementById("customer-name");
+      const phoneEl = document.getElementById("customer-phone");
+      if (nameEl && data.name) (nameEl as HTMLInputElement).value = data.name;
+      if (phoneEl && data.phone) (phoneEl as HTMLInputElement).value = data.phone;
+    }
+
+    document.addEventListener("astro:page-load", () => {
+      restoreFields();
+      const nameEl = document.getElementById("customer-name");
+      const phoneEl = document.getElementById("customer-phone");
+      nameEl?.addEventListener("input", saveCustomer);
+      phoneEl?.addEventListener("input", saveCustomer);
+    });
+
+    window.__saveCustomerLocation = saveCustomer;
+  </script>
+</BaseLayout>

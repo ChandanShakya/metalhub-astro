@@ -1,50 +1,41 @@
 ---
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
-import { ClientRouter } from 'astro:transitions';
-import '../styles/global.css';
+import { ClientRouter } from "astro:transitions";
+import Footer from "../components/Footer.astro";
+import Header from "../components/Header.astro";
+import type { Locale } from "../lib/i18n";
+import "../styles/global.css";
 
 interface Props {
-  title: string;
-  locale?: string;
-  description?: string;
+    title: string;
+    locale?: Locale;
+    description?: string;
 }
 
-const { title, locale = 'en', description = 'Handcrafted copper, brass & bronze kitchenware from Kathmandu' } = Astro.props;
+const {
+    title,
+    locale = "en",
+    description = "Handcrafted copper, brass & bronze kitchenware from Kathmandu",
+} = Astro.props;
 const currentPath = Astro.url.pathname;
 ---
-<!DOCTYPE html>
+<!doctype html>
 <html lang={locale} data-locale={locale}>
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{title} — Metal Hub</title>
-  <meta name="description" content={description} />
-  <meta property="og:title" content={`${title} — Metal Hub`} />
-  <meta property="og:type" content="website" />
-  <meta property="og:description" content={description} />
-  <meta name="robots" content="index, follow" />
-  <ClientRouter />
-</head>
-<body>
-  <Header locale={locale} currentPath={currentPath} />
-  <main>
-    <slot />
-  </main>
-  <Footer locale={locale} />
-
-  <script>
-    document.addEventListener('astro:page-load', () => {
-      try {
-        const cart = JSON.parse(localStorage.getItem('metalhub-cart') || '[]');
-        const count = cart.reduce((s, i) => s + i.qty, 0);
-        const badge = document.getElementById('cart-badge');
-        if (badge) {
-          badge.style.display = count > 0 ? 'inline-flex' : 'none';
-          badge.textContent = count;
-        }
-      } catch {}
-    });
-  </script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title} — Metal Hub</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={`${title} — Metal Hub`} />
+    <meta property="og:type" content="website" />
+    <meta property="og:description" content={description} />
+    <meta name="robots" content="index, follow" />
+    <ClientRouter />
+  </head>
+  <body class="bg-surface-1 text-text-1 font-sans">
+    <Header locale={locale} currentPath={currentPath} />
+    <main class="flex-1">
+      <slot />
+    </main>
+    <Footer locale={locale} />
+  </body>
 </html>

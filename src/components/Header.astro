@@ -1,76 +1,268 @@
 ---
-import { getTranslations, localizedPath } from '../lib/i18n';
+import { getTranslations, type Locale, localizedPath } from "../lib/i18n";
 
 interface Props {
-  locale: string;
-  currentPath: string;
+    locale: Locale;
+    currentPath: string;
 }
 
 const { locale, currentPath } = Astro.props;
-const t = getTranslations(locale as any);
+const t = getTranslations(locale);
 
 const navItems = [
-  { href: '/', key: 'nav.home' },
-  { href: '/products/', key: 'nav.products' },
-  { href: '/social/', key: 'nav.social' },
+    { href: "/", key: "nav.home" },
+    { href: "/products/", key: "nav.products" },
+    { href: "/social/", key: "nav.social" },
 ];
 
-const langOptions = [
-  { code: 'en', label: 'EN' },
-  { code: 'ne', label: 'नेपाली' },
-  { code: 'newa', label: 'नेवाः' },
-];
+const langLabels: Record<string, string> = { en: "EN", ne: "नेपाली", newa: "नेवाः" };
+
+const checkoutPath = locale === "en" ? "/checkout/" : `/${locale}/checkout/`;
+const isCheckout = currentPath.includes("/checkout");
 ---
-<header class="header" role="banner">
-  <div class="header-inner">
-    <a href={localizedPath('/', locale as any)} class="header-logo">
-      <span class="logo-icon" aria-hidden="true">MH</span> Metal Hub
+
+<header class="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-border">
+  <div class="mx-auto max-w-site flex items-center justify-between px-4 py-3 md:px-6 md:py-3.5">
+    <a href={localizedPath("/", locale)} class="flex items-center gap-2 text-lg font-bold text-text-1 no-underline hover:no-underline">
+      <span class="inline-flex items-center justify-center w-7 h-7 bg-accent text-white text-[0.65rem] font-extrabold rounded-lg">MH</span>
+      Metal Hub
     </a>
-    <nav class="header-nav" role="navigation" aria-label="Main navigation">
-      {navItems.map((item) => (
-        <a href={localizedPath(item.href, locale as any)}>{t(item.key)}</a>
-      ))}
-      <a href={localizedPath('/checkout/', locale as any)} class="cart-link" aria-label="Checkout">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-          <path d="m1 1 4 0 2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-        </svg>
-        <span id="cart-badge" class="cart-badge" style="display:none;" aria-label="items in cart">0</span>
-      </a>
-      <div class="lang-toggle" role="group" aria-label="Language selection">
-        {langOptions.map((lang) => {
-          const pathWithoutLang = currentPath.replace(/^\/(ne|newa)\//, '/');
-          const href = lang.code === 'en' ? pathWithoutLang : `/${lang.code}${pathWithoutLang}`;
-          return (
-            <a href={href} class:list={['lang-btn', { active: locale === lang.code }]} aria-label={`Switch to ${lang.code === 'en' ? 'English' : lang.code === 'ne' ? 'Nepali' : 'Newari'}`} aria-current={locale === lang.code ? 'true' : undefined}>
-              {lang.label}
+    <nav class="flex items-center gap-3 md:gap-6" aria-label="Main navigation">
+      {navItems.map((item) => {
+        const href = localizedPath(item.href, locale);
+        const isActive = item.href === "/" ? currentPath === "/" || currentPath === `/${locale}/` : currentPath.startsWith(href);
+        return (
+          <a
+            href={href}
+            class:list={[
+                "text-sm font-medium no-underline transition-colors py-1 border-b-2",
+                isActive ? "text-accent border-accent" : "text-text-2 border-transparent hover:text-accent"
+            ]}
+          >
+            {t(item.key)}
+          </a>
+        );
+      })}
+      <div class="relative cart-dropdown-wrapper">
+        <a href={checkoutPath} class:list={["relative flex items-center no-underline cart-link", isCheckout ? "text-accent" : "text-text-2"]} aria-label={t("nav.checkout")}>
+          <svg class:list={["transition-colors", isCheckout ? "stroke-accent" : "stroke-text-2 hover:stroke-accent"]} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+            <path d="m1 1 4 0 2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+          </svg>
+          <span id="cart-badge" class="absolute -top-1.5 -right-2 hidden bg-sale text-white text-[0.6rem] font-bold min-w-4 h-4 rounded-full items-center justify-center px-1 leading-none" aria-label="items in cart">0</span>
+        </a>
+        <div id="cart-dropdown" class="hidden absolute top-full right-0 mt-2 w-80 bg-surface-2 border border-border rounded-xl shadow-xl z-[200] overflow-hidden">
+          <div class="p-4">
+            <div id="cart-dropdown-items"></div>
+            <div id="cart-empty" class="text-center py-4 text-text-3 text-sm"></div>
+            <div id="cart-dropdown-footer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="relative ml-2 pl-2 border-l border-border">
+        <button class="lang-trigger inline-flex items-center gap-1 bg-surface-2 border border-border rounded-lg px-2 py-1 text-sm font-medium text-text-2 cursor-pointer hover:border-accent hover:text-accent transition-[colors,transform]" aria-label="Language selection" aria-expanded="false" aria-haspopup="true">
+          {langLabels[locale]}
+          <svg class="transition-transform" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="lang-menu absolute top-full right-0 mt-1 min-w-full bg-surface-2 border border-border rounded-lg shadow-lg opacity-0 invisible -translate-y-1 transition-[colors,transform] z-[200] overflow-hidden" role="menu">
+          {(["en", "ne", "newa"] as const).map((lang) => (
+            <a
+              href="#"
+              class:list={["block w-full px-3 py-2 text-sm font-medium text-center no-underline transition-colors", locale === lang ? "bg-accent text-white font-semibold" : "text-text-2 hover:bg-surface-3 hover:text-accent"]}
+              role="menuitem"
+              data-lang={lang}
+            >
+              {langLabels[lang]}
             </a>
-          );
-        })}
+          ))}
+        </div>
       </div>
     </nav>
   </div>
 </header>
 
-<script>
+<script is:inline define:vars={{ locale, langLabels: JSON.stringify(langLabels) }}>
+  var CART_KEY = "metalhub-cart";
+  var i18n = {
+    en: { empty: "Your cart is empty", subtotal: "Subtotal", checkout: "Checkout", remove: "Remove" },
+    ne: { empty: "तपाईंको कार्ट खाली छ", subtotal: "उपकुल", checkout: "चेकआउट", remove: "हटाउनुहोस्" },
+    newa: { empty: "छिग्व म्हिग्व असः खाली", subtotal: "जोड", remove: "असः दू", checkout: "म्हिग्व असः" }
+  };
+  var t = function(key) { return (i18n[locale] || i18n.en)[key] || key; };
+
+  function getCart() {
+    try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); } catch { return []; }
+  }
+  function saveCart(items) {
+    localStorage.setItem(CART_KEY, JSON.stringify(items));
+    window.dispatchEvent(new Event("cart-updated"));
+  }
+
+  function buildLangHref(langCode) {
+    var path = window.location.pathname;
+    var curLocale = locale;
+    if (curLocale !== "en") {
+      path = path.replace(new RegExp("^/" + curLocale + "/?"), "/");
+    }
+    if (langCode === "en") return path;
+    return path === "/" ? "/" + langCode + "/" : "/" + langCode + path;
+  }
+
   function updateCartBadge() {
     try {
-      const cart = JSON.parse(localStorage.getItem('metalhub-cart') || '[]');
-      const count = cart.reduce((s, i) => s + i.qty, 0);
-      const badge = document.getElementById('cart-badge');
+      var cart = getCart();
+      var count = cart.reduce(function(s, i) { return s + i.qty; }, 0);
+      var badge = document.getElementById("cart-badge");
       if (badge) {
         if (count > 0) {
-          badge.style.display = 'inline-flex';
-          badge.textContent = count;
-          badge.setAttribute('aria-label', `${count} items in cart`);
+          badge.classList.remove("hidden");
+          badge.classList.add("inline-flex");
+          badge.textContent = String(count);
+          badge.setAttribute("aria-label", count + " items in cart");
         } else {
-          badge.style.display = 'none';
+          badge.classList.add("hidden");
+          badge.classList.remove("inline-flex");
         }
       }
     } catch {}
   }
-  document.addEventListener('astro:page-load', updateCartBadge);
-  updateCartBadge();
-  window.addEventListener('storage', updateCartBadge);
-  setInterval(updateCartBadge, 500);
+
+  function renderCartDropdown() {
+    var cart = getCart();
+    var itemsEl = document.getElementById("cart-dropdown-items");
+    var emptyEl = document.getElementById("cart-empty");
+    var footerEl = document.getElementById("cart-dropdown-footer");
+    if (!itemsEl || !emptyEl || !footerEl) return;
+
+    if (cart.length === 0) {
+      itemsEl.innerHTML = "";
+      emptyEl.textContent = t("empty");
+      emptyEl.classList.remove("hidden");
+      footerEl.innerHTML = "";
+      return;
+    }
+
+    emptyEl.classList.add("hidden");
+    var subtotal = 0;
+    itemsEl.innerHTML = cart.map(function(item, i) {
+      subtotal += item.unitPrice * item.qty;
+      var opts = Object.entries(item.selectedOptions || {}).map(function(e) { return e[0] + ": " + e[1]; }).join(", ");
+      var params = new URLSearchParams();
+      Object.entries(item.selectedOptions || {}).forEach(function(e) { params.set(e[0], e[1]); });
+      var queryStr = params.toString() ? "?" + params.toString() : "";
+      var productHref = (locale === "en" ? "/products/" : "/" + locale + "/products/") + item.slug + "/" + queryStr;
+      return '<div class="flex items-center gap-3 py-2 border-b border-border last:border-0">' +
+        '<div class="flex-1 min-w-0">' +
+          '<a href="' + productHref + '" class="text-sm font-semibold truncate text-text-1 no-underline hover:text-accent transition-colors block">' + item.name + '</a>' +
+          (opts ? '<p class="text-xs text-text-3 truncate">' + opts + '</p>' : '') +
+          '<p class="text-xs text-text-2">NPR ' + item.unitPrice.toLocaleString() + ' \u00d7 ' + item.qty + '</p>' +
+        '</div>' +
+        '<div class="flex items-center gap-1">' +
+          '<button onclick="window.__cartUpdateQty(' + i + ',' + (item.qty - 1) + ')" class="w-6 h-6 flex items-center justify-center border border-border rounded text-xs cursor-pointer hover:border-accent hover:text-accent transition-colors">\u2212</button>' +
+          '<span class="w-6 text-center text-sm font-bold">' + item.qty + '</span>' +
+          '<button onclick="window.__cartUpdateQty(' + i + ',' + (item.qty + 1) + ')" class="w-6 h-6 flex items-center justify-center border border-border rounded text-xs cursor-pointer hover:border-accent hover:text-accent transition-colors">+</button>' +
+          '<button onclick="window.__cartRemoveItem(' + i + ')" class="w-6 h-6 flex items-center justify-center border border-sale rounded text-xs text-sale cursor-pointer hover:bg-sale hover:text-white transition-colors ml-1">\u00d7</button>' +
+        '</div>' +
+      '</div>';
+    }).join("");
+
+    var checkoutHref = locale === "en" ? "/checkout/" : "/" + locale + "/checkout/";
+    footerEl.innerHTML =
+      '<div class="flex justify-between items-center font-bold text-sm pt-2 mt-1 border-t border-border">' +
+        '<span>' + t("subtotal") + '</span>' +
+        '<span>NPR ' + subtotal.toLocaleString() + '</span>' +
+      '</div>' +
+      '<a href="' + checkoutHref + '" class="mt-3 block text-center bg-success text-white rounded-lg py-2 text-sm font-semibold no-underline hover:bg-green-800 transition-colors">' + t("checkout") + '</a>';
+  }
+
+  window.__cartUpdateQty = function(index, qty) {
+    var cart = getCart();
+    if (cart[index]) {
+      cart[index].qty = Math.max(1, qty);
+      saveCart(cart);
+      renderCartDropdown();
+      updateCartBadge();
+    }
+  };
+
+  window.__cartRemoveItem = function(index) {
+    var cart = getCart();
+    cart.splice(index, 1);
+    saveCart(cart);
+    renderCartDropdown();
+    updateCartBadge();
+  };
+
+  var _headerAbort = null;
+
+  document.addEventListener("astro:page-load", function() {
+    if (_headerAbort) _headerAbort.abort();
+    _headerAbort = new AbortController();
+    var signal = _headerAbort.signal;
+
+    updateCartBadge();
+    renderCartDropdown();
+
+    var wrapper = document.querySelector(".cart-dropdown-wrapper");
+    var dropdown = document.getElementById("cart-dropdown");
+    if (wrapper && dropdown) {
+      var link = wrapper.querySelector(".cart-link");
+      link.addEventListener("click", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var isHidden = dropdown.classList.contains("hidden");
+        dropdown.classList.toggle("hidden");
+        if (isHidden) renderCartDropdown();
+      }, { signal: signal });
+
+      document.addEventListener("click", function() {
+        dropdown.classList.add("hidden");
+      }, { signal: signal });
+
+      dropdown.addEventListener("click", function(e) {
+        e.stopPropagation();
+      }, { signal: signal });
+    }
+
+    var trigger = document.querySelector(".lang-trigger");
+    var menu = document.querySelector(".lang-menu");
+    if (trigger && menu) {
+      trigger.addEventListener("click", function(e) {
+        e.stopPropagation();
+        var expanded = trigger.getAttribute("aria-expanded") === "true";
+        trigger.setAttribute("aria-expanded", String(!expanded));
+        menu.classList.toggle("opacity-100");
+        menu.classList.toggle("visible");
+        menu.classList.toggle("translate-y-0");
+        menu.classList.toggle("-translate-y-1");
+        menu.classList.toggle("opacity-0");
+        menu.classList.toggle("invisible");
+      }, { signal: signal });
+
+      document.addEventListener("click", function() {
+        trigger.setAttribute("aria-expanded", "false");
+        menu.classList.add("opacity-0", "invisible", "-translate-y-1");
+        menu.classList.remove("opacity-100", "visible", "translate-y-0");
+      }, { signal: signal });
+
+      menu.addEventListener("click", function(e) {
+        e.stopPropagation();
+      }, { signal: signal });
+
+      menu.querySelectorAll("[data-lang]").forEach(function(link) {
+        link.addEventListener("click", function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var langCode = this.getAttribute("data-lang");
+          var href = buildLangHref(langCode);
+          window.location.href = href;
+        }, { signal: signal });
+      });
+    }
+  });
+  window.addEventListener("storage", updateCartBadge);
+  window.addEventListener("cart-updated", function() {
+    updateCartBadge();
+    renderCartDropdown();
+  });
 </script>

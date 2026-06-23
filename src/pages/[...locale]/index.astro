@@ -1,0 +1,62 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getTranslations, locales, localizedPath } from "../../lib/i18n";
+
+export function getStaticPaths() {
+    return locales.map((locale) => ({
+        params: { locale: locale === "en" ? undefined : locale },
+        props: { locale },
+    }));
+}
+
+const { locale } = Astro.props;
+const t = getTranslations(locale);
+
+const products = await getCollection("products");
+const categories = await getCollection("categories");
+const sortedCategories = categories.sort((a, b) => a.data.order - b.data.order);
+const featured = products.filter((p) => p.data.featured && p.data.inStock).slice(0, 4);
+---
+<BaseLayout title={t("nav.home")} locale={locale}>
+  <section class="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700 text-white text-center py-16 px-4 md:py-20 md:px-6 relative overflow-hidden">
+    <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgb(180_83_9/0.15),transparent_60%),radial-gradient(circle_at_70%_80%,rgb(217_119_6/0.1),transparent_50%)]"></div>
+    <h1 class="text-3xl md:text-5xl font-extrabold mb-3 relative tracking-tight">{t("hero.title")}</h1>
+    <p class="text-base md:text-lg opacity-85 mb-7 relative max-w-xl mx-auto">{t("hero.subtitle")}</p>
+    <a href={localizedPath("/products/", locale)} class="inline-block bg-accent text-white py-3 px-8 rounded-xl font-bold text-base no-underline transition-[colors,transform] relative shadow-[0_4px_14px_rgb(180_83_9/0.3)] hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgb(180_83_9/0.35)] hover:text-white hover:bg-accent-light">{t("hero.cta")}</a>
+  </section>
+
+  {featured.length > 0 && (
+    <section class="py-8 container mx-auto px-4">
+      <h2 class="text-2xl font-bold mb-5">{t("products.featured")}</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+        {featured.map((product) => (
+          <a href={localizedPath(`/products/${product.data.slug}/`, locale)} class="block bg-surface-2 border border-border rounded-xl overflow-hidden no-underline text-inherit transition-[colors,transform] duration-300 [perspective:800px] hover:-translate-y-1 hover:rotate-x-[1.5deg] hover:shadow-[0_20px_40px_-10px_rgb(15_23_42/0.15)]">
+            <img src={product.data.images[0] || "/images/products/placeholder.jpg"} alt={product.data.name[locale as keyof typeof product.data.name] || product.data.name.en} class="w-full h-48 md:h-64 object-cover bg-gradient-to-br from-surface-3 to-border" loading="lazy" />
+            <div class="p-4">
+              <h3 class="text-base font-semibold mb-1">{product.data.name[locale as keyof typeof product.data.name] || product.data.name.en}</h3>
+              <div class="text-xs text-text-3 mb-2 capitalize">{product.data.category}</div>
+              <div class="font-bold text-base text-accent-dark">NPR {product.data.basePrice.toLocaleString()}</div>
+            </div>
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
+
+  {sortedCategories.length > 0 && (
+    <section class="py-8 container mx-auto px-4">
+      <h2 class="text-2xl font-bold mb-5">{t("products.shopByCategory")}</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+        {sortedCategories.map((cat) => (
+          <a href={localizedPath(`/products/?category=${cat.data.slug}`, locale)} class="block bg-surface-2 border border-border rounded-xl overflow-hidden no-underline text-inherit transition-[colors,transform] duration-300 hover:-translate-y-1 hover:shadow-[0_20px_40px_-10px_rgb(15_23_42/0.15)] cursor-pointer">
+            <div class="text-center py-8 px-4">
+              <div class="text-5xl leading-none">{cat.data.icon}</div>
+              <p class="mt-2 font-semibold text-base">{cat.data.name[locale as keyof typeof cat.data.name] || cat.data.name.en}</p>
+            </div>
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
+</BaseLayout>

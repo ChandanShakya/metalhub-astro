@@ -1,0 +1,33 @@
+{
+    "key": "attributes",
+    "en": {
+        "size": "Size",
+        "material": "Material",
+        "finish": "Finish",
+        "small": "Small",
+        "medium": "Medium",
+        "large": "Large",
+        "polished": "Polished",
+        "antique": "Antique"
+    },
+    "ne": {
+        "size": "साइज",
+        "material": "सामग्री",
+        "finish": "फिनिस",
+        "small": "सानो",
+        "medium": "मध्यम",
+        "large": "ठूलो",
+        "polished": "पॉलिस",
+        "antique": "एन्टिक"
+    },
+    "newa": {
+        "size": "साइज",
+        "material": "सामग्री",
+        "finish": "फिनिस",
+        "small": "सानो",
+        "medium": "मध्यम",
+        "large": "ठूलो",
+        "polished": "पॉलिस",
+        "antique": "एन्टिक"
+    }
+}
