@@ -19,7 +19,7 @@ git push -u origin main
 2. Go to **Workers & Pages** → **Create** → **Pages** → **Connect to Git**
 3. Select your GitHub repo (`metalhub-astro`)
 4. Configure the build:
-   - **Build command:** `npm run build`
+   - **Build command:** `bun run build`
    - **Build output directory:** `dist`
    - **Node.js version:** `22` (set in **Environment variables**: `NODE_VERSION` = `22`)
 5. Click **Save and Deploy**
@@ -46,10 +46,10 @@ git clone https://github.com/sveltia/sveltia-cms-auth.git
 cd sveltia-cms-auth
 
 # Install dependencies
-npm install
+bun install
 
 # Deploy to Cloudflare Workers
-npx wrangler deploy
+bunx wrangler deploy
 ```
 
 Note the Worker URL (e.g., `https://sveltia-cms-auth.<your-subdomain>.workers.dev`).
@@ -72,10 +72,10 @@ Note the Worker URL (e.g., `https://sveltia-cms-auth.<your-subdomain>.workers.de
 cd sveltia-cms-auth
 
 # Set the OAuth credentials as Worker secrets
-npx wrangler secret put GITHUB_CLIENT_ID
+bunx wrangler secret put GITHUB_CLIENT_ID
 # Paste your Client ID when prompted
 
-npx wrangler secret put GITHUB_CLIENT_SECRET
+bunx wrangler secret put GITHUB_CLIENT_SECRET
 # Paste your Client Secret when prompted
 ```
 
@@ -292,7 +292,7 @@ To use a custom domain (e.g., `metalhub.com.np`):
 
 ### Build fails with "Cannot find module"
 
-Run `npm install` locally and commit `package-lock.json`. Ensure `NODE_VERSION` is set to `22` in Cloudflare Pages environment variables.
+Run `bun install` locally and commit `bun.lock`. Ensure `NODE_VERSION` is set to `22` in Cloudflare Pages environment variables.
 
 ### CMS login shows "Repository not found"
 

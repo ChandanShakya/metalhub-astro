@@ -43,8 +43,7 @@ No server in the ordering path. The customer's own messaging app is the backend.
 
 ## Prerequisites
 
-- **Node.js** >= 22.12.0
-- **npm**
+- **[Bun](https://bun.sh)** >= 1.0
 - **GitHub account** (for CMS auth and hosting)
 - **Cloudflare account** (free tier is sufficient)
 
@@ -52,16 +51,16 @@ No server in the ordering path. The customer's own messaging app is the backend.
 
 ```sh
 # Install dependencies
-npm install
+bun install
 
 # Start dev server (http://localhost:4321)
-npm run dev
+bun run dev
 
 # Build for production
-npm run build
+bun run build
 
 # Preview the production build
-npm run preview
+bun run preview
 ```
 
 ## Project Structure
@@ -151,11 +150,11 @@ See [deploy.md](deploy.md) for the full step-by-step deployment guide.
 
 | Command | Action |
 |---------|--------|
-| `npm install` | Install dependencies |
-| `npm run dev` | Start dev server at `localhost:4321` |
-| `npm run build` | Build production site to `./dist/` |
-| `npm run preview` | Preview production build locally |
-| `npm run astro check` | Run Astro type checking |
+| `bun install` | Install dependencies |
+| `bun run dev` | Start dev server at `localhost:4321` |
+| `bun run build` | Build production site to `./dist/` |
+| `bun run preview` | Preview production build locally |
+| `bun run astro check` | Run Astro type checking |
 
 ## License
 

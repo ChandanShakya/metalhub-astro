@@ -271,7 +271,7 @@ collections:
 
 ## 9. Setup Steps
 
-1. `npm create astro@latest metal-hub-site` → minimal template
+1. `bun create astro@latest metal-hub-site` → minimal template
 2. Configure `astro.config.mjs`:
    ```js
    export default defineConfig({
@@ -286,7 +286,7 @@ collections:
 4. Add `public/admin/index.html` (loads Sveltia CMS script) + `config.yml` from §8
 5. Deploy `sveltia-cms-auth` to Cloudflare Workers, register a GitHub OAuth App pointing at the Worker URL, set `base_url` in `config.yml`
 6. Add `src/content/products/` schema (Astro Content Collections) matching §7
-7. Add Leaflet: `npm install leaflet`, build a small `<MapPicker />` island, load only on the checkout page
+7. Add Leaflet: `bun add leaflet`, build a small `<MapPicker />` island, load only on the checkout page
 8. Build the order-message function (pure client-side): take cart + customer info + pin → format the text block from FR-5.4 → `encodeURIComponent` → build the wa.me and m.me URLs → render as buttons
 9. Add `en.json` / `ne.json` / `newa.json` UI dictionaries and a `t(key)` helper used across components
 10. Source a free Ranjana-mapped Devanagari font (commonly distributed as "Ranjana Lipi"), check its license permits commercial embedding, self-host the `.woff2` in `/public/fonts/`, and scope it to the Newari locale:

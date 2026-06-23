@@ -6,18 +6,18 @@ Development guide for future contributors.
 
 ```sh
 # 1. Install dependencies
-npm install
+bun install
 
 # 2. Start dev server (hot reload at http://localhost:4321)
-npm run dev
+bun run dev
 
 # 3. Make your changes
 
 # 4. Verify the build succeeds
-npm run build
+bun run build
 
 # 5. Preview the production build
-npm run preview
+bun run preview
 
 # 6. Commit and push (triggers Cloudflare Pages rebuild)
 git add <files>
@@ -205,8 +205,8 @@ The cart uses `localStorage` with key `metalhub-cart`. See `src/lib/cart.ts` for
 
 There is no test framework configured. Verify changes by:
 
-1. `npm run build` — ensure no build errors
-2. `npm run dev` — check all pages render correctly
+1. `bun run build` — ensure no build errors
+2. `bun run dev` — check all pages render correctly
 3. Test all 3 locales (EN, NE, Newa)
 4. Test the full flow: browse → add to cart → checkout → WhatsApp/Messenger link
 5. Test CMS at `http://localhost:4321/admin` (requires the auth Worker running locally or in production)
