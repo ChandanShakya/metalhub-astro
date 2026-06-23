@@ -1,0 +1,195 @@
+---
+interface Props {
+  attributes: any[];
+  locale: string;
+  basePrice: number;
+  productSlug: string;
+  productName: string;
+}
+const { attributes, locale, basePrice, productSlug, productName } = Astro.props;
+const checkoutPath = locale === 'en' ? '/checkout/' : `/${locale}/checkout/`;
+---
+
+<div id="product-attributes">
+  {attributes.map((attr) => (
+    <div class="attribute-group">
+      <label>{attr.name}</label>
+      <div class="attribute-options" data-attribute-name={attr.name}>
+        {attr.options.map((opt, i) => (
+          <button
+            class:list={['attribute-option', { selected: i === 0 }]}
+            data-label={opt.label}
+            data-modifier={opt.priceModifier || 0}
+            data-discount-active={opt.discount?.active || false}
+            data-discount-type={opt.discount?.type || 'percentage'}
+            data-discount-value={opt.discount?.value || 0}
+          >
+            {opt.label}
+            {opt.discount?.active && <span class="sale-badge" style="margin-left:0.25rem;">Sale</span>}
+          </button>
+        ))}
+      </div>
+    </div>
+  ))}
+</div>
+
+<div id="price-display" class="price-display"></div>
+
+<div class="cart-actions">
+  <button id="add-to-cart-btn" class="btn-add-cart">
+    Add to Cart
+  </button>
+  <a id="go-checkout-btn" href={checkoutPath} class="btn-checkout" style="display:none;">
+    Go to Checkout
+  </a>
+</div>
+
+<script define:vars={{ basePrice, attributes, productSlug, productName, locale, checkoutPath }}>
+  const CART_KEY = 'metalhub-cart';
+
+  function getCart() {
+    try { return JSON.parse(localStorage.getItem(CART_KEY) || '[]'); } catch { return []; }
+  }
+
+  function saveCart(items) { localStorage.setItem(CART_KEY, JSON.stringify(items)); }
+
+  function getSelectedOptions() {
+    const options = {};
+    const groups = document.querySelectorAll('.attribute-options');
+    groups.forEach(group => {
+      const name = group.dataset.attributeName;
+      const selected = group.querySelector('.attribute-option.selected');
+      if (selected) options[name] = selected.dataset.label;
+    });
+    return options;
+  }
+
+  function getSelectedModifiers() {
+    const modifiers = [];
+    const groups = document.querySelectorAll('.attribute-options');
+    groups.forEach(group => {
+      const selected = group.querySelector('.attribute-option.selected');
+      if (selected) modifiers.push(parseFloat(selected.dataset.modifier || '0'));
+    });
+    return modifiers;
+  }
+
+  function getSelectedOptionDiscounts() {
+    const discounts = [];
+    const groups = document.querySelectorAll('.attribute-options');
+    groups.forEach(group => {
+      const selected = group.querySelector('.attribute-option.selected');
+      if (selected) {
+        discounts.push({
+          active: selected.dataset.discountActive === 'true',
+          type: selected.dataset.discountType,
+          value: parseFloat(selected.dataset.discountValue || '0')
+        });
+      }
+    });
+    return discounts;
+  }
+
+  function calculatePrice() {
+    const modifiers = getSelectedModifiers();
+    const optionDiscounts = getSelectedOptionDiscounts();
+
+    let total = basePrice;
+    modifiers.forEach(m => total += m);
+
+    let bestDiscount = null;
+    optionDiscounts.forEach(d => {
+      if (d.active) {
+        if (!bestDiscount || d.value > bestDiscount.value) bestDiscount = d;
+      }
+    });
+
+    const productDiscount = JSON.parse(document.getElementById('product-discount-data')?.textContent || '{}');
+    if (!bestDiscount && productDiscount.active) bestDiscount = productDiscount;
+
+    if (!bestDiscount) {
+      return { price: total, original: total, hasDiscount: false, label: '' };
+    }
+
+    let discounted;
+    if (bestDiscount.type === 'percentage') {
+      discounted = Math.round(total * (1 - bestDiscount.value / 100));
+    } else {
+      discounted = Math.max(0, total - bestDiscount.value);
+    }
+
+    const label = bestDiscount.type === 'percentage'
+      ? `${bestDiscount.value}% off`
+      : `NPR ${bestDiscount.value} off`;
+
+    return { price: discounted, original: total, hasDiscount: true, label };
+  }
+
+  function renderPrice() {
+    const result = calculatePrice();
+    const display = document.getElementById('price-display');
+
+    let html = `NPR ${result.price.toLocaleString()}`;
+    if (result.hasDiscount) {
+      html += ` <span class="price-original" style="font-size:1rem;">NPR ${result.original.toLocaleString()}</span>`;
+      html += ` <span class="sale-badge">${result.label}</span>`;
+    }
+    display.innerHTML = html;
+  }
+
+  function updateCheckoutVisibility() {
+    const cart = getCart();
+    const inCart = cart.some(c => c.slug === productSlug);
+    const checkoutBtn = document.getElementById('go-checkout-btn');
+    if (checkoutBtn) {
+      checkoutBtn.style.display = inCart ? 'inline-flex' : 'none';
+    }
+  }
+
+  document.querySelectorAll('.attribute-option').forEach(btn => {
+    btn.addEventListener('click', function() {
+      this.closest('.attribute-options').querySelectorAll('.attribute-option').forEach(b => b.classList.remove('selected'));
+      this.classList.add('selected');
+      renderPrice();
+    });
+  });
+
+  document.getElementById('add-to-cart-btn').addEventListener('click', function() {
+    const result = calculatePrice();
+    const cart = getCart();
+    const options = getSelectedOptions();
+    const modifiers = getSelectedModifiers();
+
+    const existing = cart.findIndex(c =>
+      c.slug === productSlug && JSON.stringify(c.selectedOptions) === JSON.stringify(options)
+    );
+
+    if (existing >= 0) {
+      cart[existing].qty += 1;
+    } else {
+      cart.push({
+        slug: productSlug,
+        name: productName,
+        selectedOptions: options,
+        selectedModifiers: modifiers,
+        unitPrice: result.price,
+        originalUnitPrice: result.original,
+        hasDiscount: result.hasDiscount,
+        qty: 1
+      });
+    }
+
+    saveCart(cart);
+    this.textContent = 'Added!';
+    this.style.background = '#2e7d32';
+    setTimeout(() => {
+      this.textContent = 'Add to Cart';
+      this.style.background = '';
+    }, 1500);
+
+    updateCheckoutVisibility();
+  });
+
+  renderPrice();
+  updateCheckoutVisibility();
+</script>

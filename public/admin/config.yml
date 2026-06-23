@@ -1,0 +1,86 @@
+backend:
+  name: github
+  repo: <your-username>/metal-hub-site
+  branch: main
+  base_url: https://sveltia-cms-auth.<you>.workers.dev
+
+media_folder: "public/images/products"
+public_folder: "/images/products"
+
+i18n:
+  structure: multiple_files
+  locales: [en, ne, newa]
+  default_locale: en
+
+collections:
+  - name: categories
+    label: Categories
+    folder: src/content/categories
+    create: true
+    i18n: true
+    fields:
+      - { label: Name, name: name, widget: string, i18n: true }
+      - { label: Slug, name: slug, widget: string }
+      - { label: Icon, name: icon, widget: string, default: "📦", hint: "An emoji to represent this category" }
+      - { label: Order, name: order, widget: number, default: 0, hint: "Lower numbers appear first" }
+
+  - name: products
+    label: Products
+    folder: src/content/products
+    create: true
+    i18n: true
+    fields:
+      - { label: Name, name: name, widget: string, i18n: true }
+      - { label: Slug, name: slug, widget: string }
+      - { label: Description, name: description, widget: markdown, i18n: true }
+      - { label: Category, name: category, widget: string, hint: "Must match a category slug exactly (e.g. copper, brass)" }
+      - { label: Images, name: images, widget: list, field: { name: image, widget: image } }
+      - { label: Base Price (NPR), name: basePrice, widget: number }
+      - { label: In Stock, name: inStock, widget: boolean, default: true }
+      - { label: Featured, name: featured, widget: boolean, default: false }
+      - label: Discount
+        name: discount
+        widget: object
+        fields:
+          - { label: Active, name: active, widget: boolean, default: false }
+          - { label: Type, name: type, widget: select, options: [percentage, flat], default: percentage }
+          - { label: Value, name: value, widget: number, default: 0 }
+      - label: Attributes
+        name: attributes
+        widget: list
+        fields:
+          - { label: Attribute Name, name: name, widget: string, hint: "e.g. Size, Finish" }
+          - label: Options
+            name: options
+            widget: list
+            fields:
+              - { label: Label, name: label, widget: string }
+              - { label: Price Modifier, name: priceModifier, widget: number, default: 0 }
+              - label: Discount (optional, overrides product discount when this option is picked)
+                name: discount
+                widget: object
+                required: false
+                fields:
+                  - { label: Active, name: active, widget: boolean, default: false }
+                  - { label: Type, name: type, widget: select, options: [percentage, flat], default: percentage }
+                  - { label: Value, name: value, widget: number, default: 0 }
+
+  - name: socialHighlights
+    label: Social Highlights
+    folder: src/content/social-highlights
+    create: true
+    i18n: false
+    fields:
+      - { label: Platform, name: platform, widget: select, options: [instagram, tiktok] }
+      - { label: Embed Code, name: embedCode, widget: text, hint: "Paste the official embed snippet from the post's Share → Embed option" }
+      - { label: Caption, name: caption, widget: string, required: false }
+      - { label: Order, name: order, widget: number, default: 0 }
+
+  - name: settings
+    label: Site Settings
+    folder: src/content/settings
+    create: false
+    i18n: false
+    fields:
+      - { label: WhatsApp Number (with country code, no + or spaces), name: whatsappNumber, widget: string, hint: "e.g. 9779861760709" }
+      - { label: Facebook Page Username (for Messenger), name: messengerPage, widget: string, hint: "The username from your Facebook page URL, e.g. metalhub.np" }

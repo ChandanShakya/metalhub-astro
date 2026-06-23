@@ -1,0 +1,76 @@
+---
+import { getTranslations, localizedPath } from '../lib/i18n';
+
+interface Props {
+  locale: string;
+  currentPath: string;
+}
+
+const { locale, currentPath } = Astro.props;
+const t = getTranslations(locale as any);
+
+const navItems = [
+  { href: '/', key: 'nav.home' },
+  { href: '/products/', key: 'nav.products' },
+  { href: '/social/', key: 'nav.social' },
+];
+
+const langOptions = [
+  { code: 'en', label: 'EN' },
+  { code: 'ne', label: 'नेपाली' },
+  { code: 'newa', label: 'नेवाः' },
+];
+---
+<header class="header" role="banner">
+  <div class="header-inner">
+    <a href={localizedPath('/', locale as any)} class="header-logo">
+      <span class="logo-icon" aria-hidden="true">MH</span> Metal Hub
+    </a>
+    <nav class="header-nav" role="navigation" aria-label="Main navigation">
+      {navItems.map((item) => (
+        <a href={localizedPath(item.href, locale as any)}>{t(item.key)}</a>
+      ))}
+      <a href={localizedPath('/checkout/', locale as any)} class="cart-link" aria-label="Checkout">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+          <path d="m1 1 4 0 2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+        </svg>
+        <span id="cart-badge" class="cart-badge" style="display:none;" aria-label="items in cart">0</span>
+      </a>
+      <div class="lang-toggle" role="group" aria-label="Language selection">
+        {langOptions.map((lang) => {
+          const pathWithoutLang = currentPath.replace(/^\/(ne|newa)\//, '/');
+          const href = lang.code === 'en' ? pathWithoutLang : `/${lang.code}${pathWithoutLang}`;
+          return (
+            <a href={href} class:list={['lang-btn', { active: locale === lang.code }]} aria-label={`Switch to ${lang.code === 'en' ? 'English' : lang.code === 'ne' ? 'Nepali' : 'Newari'}`} aria-current={locale === lang.code ? 'true' : undefined}>
+              {lang.label}
+            </a>
+          );
+        })}
+      </div>
+    </nav>
+  </div>
+</header>
+
+<script>
+  function updateCartBadge() {
+    try {
+      const cart = JSON.parse(localStorage.getItem('metalhub-cart') || '[]');
+      const count = cart.reduce((s, i) => s + i.qty, 0);
+      const badge = document.getElementById('cart-badge');
+      if (badge) {
+        if (count > 0) {
+          badge.style.display = 'inline-flex';
+          badge.textContent = count;
+          badge.setAttribute('aria-label', `${count} items in cart`);
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+    } catch {}
+  }
+  document.addEventListener('astro:page-load', updateCartBadge);
+  updateCartBadge();
+  window.addEventListener('storage', updateCartBadge);
+  setInterval(updateCartBadge, 500);
+</script>

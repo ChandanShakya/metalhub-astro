@@ -1,0 +1,83 @@
+---
+interface Props {
+  locale: string;
+}
+const { locale } = Astro.props;
+---
+
+<div class="form-group">
+  <label for="map">{locale === 'en' ? 'Delivery Point (tap the map)' : locale === 'ne' ? 'डेलिभरी बिन्दु (नक्सामा ट्याप गर्नुहोस्)' : 'डेलिभरी स्थान (नक्सा ट्याप)'}</label>
+  <div id="map" class="map-container"></div>
+  <div id="map-status" class="map-status"></div>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" media="print" onload="this.media='all'" />
+<noscript><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" /></noscript>
+
+<script>
+  const STORAGE_KEY = 'metalhub-customer';
+
+  function loadCustomer() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { return {}; }
+  }
+
+  document.addEventListener('astro:page-load', () => {
+    const mapEl = document.getElementById('map');
+    const statusEl = document.getElementById('map-status');
+    if (!mapEl || mapEl.dataset.initialized) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        observer.disconnect();
+        mapEl.dataset.initialized = 'true';
+        initMap(mapEl, statusEl);
+      }
+    }, { rootMargin: '200px' });
+    observer.observe(mapEl);
+  });
+
+  async function initMap(mapEl, statusEl) {
+    const L = await import('leaflet');
+
+    const saved = loadCustomer();
+    const hasSaved = saved.lat && saved.lng;
+    const center = hasSaved ? [parseFloat(saved.lat), parseFloat(saved.lng)] : [27.7172, 85.3240];
+    const zoom = hasSaved ? 14 : 12;
+
+    const map = L.map(mapEl).setView(center, zoom);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(map);
+
+    let marker = null;
+
+    function setMarker(latlng) {
+      if (marker) map.removeLayer(marker);
+      marker = L.marker(latlng).addTo(map);
+
+      const input = document.getElementById('delivery-lat');
+      const inputLng = document.getElementById('delivery-lng');
+      if (input) input.value = latlng.lat;
+      if (inputLng) inputLng.value = latlng.lng;
+
+      if (typeof window.__saveCustomerLocation === 'function') {
+        window.__saveCustomerLocation();
+      }
+
+      statusEl.textContent = 'Pin set \u2014 tap Order to continue';
+      statusEl.style.color = 'var(--color-success)';
+    }
+
+    if (hasSaved) {
+      setMarker(L.latLng(center[0], center[1]));
+    }
+
+    map.on('click', function(e) {
+      setMarker(e.latlng);
+    });
+  }
+</script>
+
+<input type="hidden" id="delivery-lat" />
+<input type="hidden" id="delivery-lng" />

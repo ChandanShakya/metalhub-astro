@@ -1,0 +1,43 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getTranslations } from '../../lib/i18n';
+import { getCollection } from 'astro:content';
+
+const locale = 'ne';
+const t = getTranslations(locale);
+
+const highlights = await getCollection('socialHighlights');
+const instagramPosts = highlights.filter(h => h.data.platform === 'instagram').sort((a,b) => a.data.order - b.data.order);
+const tiktokPosts = highlights.filter(h => h.data.platform === 'tiktok').sort((a,b) => a.data.order - b.data.order);
+---
+<BaseLayout title={t('social.title')} locale={locale}>
+  <section class="social-section container">
+    <h1>{t('social.title')}</h1>
+
+    <div class="social-platform">
+      <h2>{t('social.facebook')} <a href="https://www.facebook.com/profile.php?id=100092431583299" target="_blank" rel="noopener">{t('social.follow')} ↗</a></h2>
+      <div class="fb-page" data-href="https://www.facebook.com/profile.php?id=100092431583299" data-tabs="timeline" data-width="500" data-height="500" data-small-header="false" data-adapt-container-width="true" data-hide-cover="false" data-show-facepile="true"></div>
+    </div>
+
+    <div class="social-platform">
+      <h2>{t('social.instagram')} <a href="https://www.instagram.com/metal_hub.np" target="_blank" rel="noopener">{t('social.follow')} ↗</a></h2>
+      <div class="social-embeds">
+        {instagramPosts.map((post) => (<div class="social-embed-frame" set:html={post.data.embedCode} />))}
+      </div>
+    </div>
+
+    <div class="social-platform">
+      <h2>{t('social.tiktok')} <a href="https://www.tiktok.com/@metalhub.np" target="_blank" rel="noopener">{t('social.follow')} ↗</a></h2>
+      <div class="social-embeds">
+        {tiktokPosts.map((post) => (<div class="social-embed-frame" set:html={post.data.embedCode} />))}
+      </div>
+    </div>
+  </section>
+
+  <script>
+    window.fbAsyncInit = function() { FB.init({ xfbml: true, version: 'v19.0' }); };
+    (function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(d.getElementById(id))return;js=d.createElement(s);js.id=id;js.src='https://connect.facebook.net/en_US/sdk.js';fjs.parentNode.insertBefore(js,fjs);}(document,'script','facebook-jssdk'));
+  </script>
+  <script async src="https://www.instagram.com/embed.js"></script>
+  <script async src="https://www.tiktok.com/embed.js"></script>
+</BaseLayout>

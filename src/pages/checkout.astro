@@ -1,0 +1,79 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import MapPicker from '../components/MapPicker.astro';
+import OrderButtons from '../components/OrderButtons.astro';
+import CartWidget from '../components/CartWidget.astro';
+import { getTranslations } from '../lib/i18n';
+import { getCollection } from 'astro:content';
+
+const locale = 'en';
+const t = getTranslations(locale);
+
+const settingsEntries = await getCollection('settings');
+const settings = settingsEntries[0]?.data || { whatsappNumber: '9779861760709', messengerPage: 'metalhub.np' };
+---
+<BaseLayout title="Checkout" locale={locale} description="Complete your Metal Hub order via WhatsApp or Messenger">
+  <section class="checkout-section">
+    <h1>{t('checkout.title')}</h1>
+
+    <CartWidget locale={locale} />
+
+    <div style="margin-top: 2rem;">
+      <h2 class="sr-only">Customer Information</h2>
+      <div class="form-group">
+        <label for="customer-name">{t('checkout.name')}</label>
+        <input type="text" id="customer-name" required autocomplete="name" />
+      </div>
+
+      <div class="form-group">
+        <label for="customer-phone">{t('checkout.phone')}</label>
+        <input type="tel" id="customer-phone" required autocomplete="tel" />
+      </div>
+
+      <MapPicker locale={locale} />
+
+      <div class="form-group">
+        <label for="customer-note">{t('checkout.note')}</label>
+        <textarea id="customer-note" placeholder={t('checkout.notePlaceholder')}></textarea>
+      </div>
+
+      <OrderButtons locale={locale} whatsappNumber={settings.whatsappNumber} messengerPage={settings.messengerPage} />
+    </div>
+  </section>
+
+  <script>
+    const STORAGE_KEY = 'metalhub-customer';
+
+    function loadCustomer() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { return {}; }
+    }
+
+    function saveCustomer() {
+      const data = {
+        name: document.getElementById('customer-name')?.value || '',
+        phone: document.getElementById('customer-phone')?.value || '',
+        lat: document.getElementById('delivery-lat')?.value || '',
+        lng: document.getElementById('delivery-lng')?.value || ''
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function restoreFields() {
+      const data = loadCustomer();
+      const nameEl = document.getElementById('customer-name');
+      const phoneEl = document.getElementById('customer-phone');
+      if (nameEl && data.name) nameEl.value = data.name;
+      if (phoneEl && data.phone) phoneEl.value = data.phone;
+    }
+
+    document.addEventListener('astro:page-load', () => {
+      restoreFields();
+      const nameEl = document.getElementById('customer-name');
+      const phoneEl = document.getElementById('customer-phone');
+      nameEl?.addEventListener('input', saveCustomer);
+      phoneEl?.addEventListener('input', saveCustomer);
+    });
+
+    window.__saveCustomerLocation = saveCustomer;
+  </script>
+</BaseLayout>

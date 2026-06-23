@@ -1,0 +1,36 @@
+---
+import { formatPrice } from '../lib/pricing';
+import { getTranslations, localizedPath } from '../lib/i18n';
+
+interface Props {
+  slug: string;
+  name: string;
+  category: string;
+  image: string;
+  price: number;
+  originalPrice: number;
+  hasDiscount: boolean;
+  discountLabel: string;
+  inStock: boolean;
+  locale: string;
+}
+
+const { slug, name, category, image, price, originalPrice, hasDiscount, discountLabel, inStock, locale } = Astro.props;
+const t = getTranslations(locale as any);
+---
+<a href={localizedPath(`/products/${slug}/`, locale as any)} class="product-card" style="text-decoration:none;color:inherit;">
+  <img src={image} alt={name} class="product-card-img" loading="lazy" />
+  <div class="product-card-body">
+    <h3>
+      {name}
+      {hasDiscount && <span class="sale-badge">{t('products.sale')}</span>}
+      {!inStock && <span class="oos-badge">{t('products.outOfStock')}</span>}
+    </h3>
+    <div class="category">{category}</div>
+    <div class="price">
+      {formatPrice(price)}
+      {hasDiscount && <span class="price-original">{formatPrice(originalPrice)}</span>}
+      {hasDiscount && <span class="sale-badge">{discountLabel}</span>}
+    </div>
+  </div>
+</a>

@@ -1,0 +1,16 @@
+---
+import { getTranslations } from '../lib/i18n';
+
+interface Props {
+  locale: string;
+}
+
+const { locale } = Astro.props;
+const t = getTranslations(locale as any);
+---
+<footer class="footer">
+  <div class="container">
+    <p>Metal Hub &copy; {new Date().getFullYear()} &mdash; {t('footer.madeIn')}</p>
+    <p>{t('footer.rights')}</p>
+  </div>
+</footer>

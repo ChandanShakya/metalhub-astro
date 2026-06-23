@@ -1,0 +1,90 @@
+---
+interface Props {
+  locale: string;
+  whatsappNumber: string;
+  messengerPage: string;
+}
+const { locale, whatsappNumber, messengerPage } = Astro.props;
+---
+
+<div id="order-buttons" class="order-buttons">
+  <button id="btn-whatsapp" class="btn-whatsapp">
+    Order via WhatsApp
+  </button>
+  <button id="btn-messenger" class="btn-messenger">
+    Order via Messenger
+  </button>
+</div>
+
+<script define:vars={{ locale, whatsappNumber, messengerPage }}>
+  const CART_KEY = 'metalhub-cart';
+
+  function getCart() {
+    try { return JSON.parse(localStorage.getItem(CART_KEY) || '[]'); } catch { return []; }
+  }
+
+  function buildMessage(name, phone, note) {
+    const cart = getCart();
+    if (cart.length === 0) return '';
+
+    let msg = 'New Order \u2014 Metal Hub\n\n';
+    msg += `Customer: ${name}\n`;
+    msg += `Phone: ${phone}\n\n`;
+    msg += 'Items:\n';
+
+    cart.forEach((item, i) => {
+      const opts = Object.entries(item.selectedOptions || {}).map(([k,v]) => `${k}: ${v}`).join(', ');
+      const price = item.hasDiscount
+        ? `NPR ${item.unitPrice.toLocaleString()} (was NPR ${item.originalUnitPrice.toLocaleString()})`
+        : `NPR ${item.unitPrice.toLocaleString()}`;
+      msg += `${i + 1}. ${item.name}${opts ? ` (${opts})` : ''} x${item.qty} \u2014 ${price}\n`;
+    });
+
+    const subtotal = cart.reduce((s, item) => s + item.unitPrice * item.qty, 0);
+    msg += `\nSubtotal: NPR ${subtotal.toLocaleString()}\n`;
+
+    const lat = document.getElementById('delivery-lat')?.value;
+    const lng = document.getElementById('delivery-lng')?.value;
+    if (lat && lng) {
+      msg += `\nDelivery location: https://www.google.com/maps?q=${lat},${lng}\n`;
+    }
+
+    if (note) msg += `\nNote: ${note}\n`;
+    msg += `\nPlease confirm availability, delivery time, and how you'd like me to pay. Thank you!`;
+
+    return msg;
+  }
+
+  function openWhatsApp(msg) {
+    window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`, '_blank');
+  }
+
+  function openMessenger(msg) {
+    window.open(`https://m.me/${messengerPage}?text=${encodeURIComponent(msg)}`, '_blank');
+  }
+
+  function init() {
+    const whatsappBtn = document.getElementById('btn-whatsapp');
+    const messengerBtn = document.getElementById('btn-messenger');
+    if (!whatsappBtn || !messengerBtn) return;
+
+    whatsappBtn.onclick = () => {
+      const name = document.getElementById('customer-name')?.value || '';
+      const phone = document.getElementById('customer-phone')?.value || '';
+      const note = document.getElementById('customer-note')?.value || '';
+      const msg = buildMessage(name, phone, note);
+      if (msg) openWhatsApp(msg);
+    };
+
+    messengerBtn.onclick = () => {
+      const name = document.getElementById('customer-name')?.value || '';
+      const phone = document.getElementById('customer-phone')?.value || '';
+      const note = document.getElementById('customer-note')?.value || '';
+      const msg = buildMessage(name, phone, note);
+      if (msg) openMessenger(msg);
+    };
+  }
+
+  document.addEventListener('astro:page-load', init);
+  init();
+</script>

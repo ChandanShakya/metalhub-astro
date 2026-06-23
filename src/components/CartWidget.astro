@@ -1,0 +1,93 @@
+---
+interface Props {
+  locale: string;
+}
+const { locale } = Astro.props;
+---
+<div id="cart-widget">
+  <div class="cart-section container">
+    <h2 data-i18n="cart.title">Your Cart</h2>
+    <div id="cart-items"></div>
+    <div id="cart-subtotal"></div>
+    <div id="cart-empty" class="cart-empty" data-i18n="cart.empty">Your cart is empty</div>
+  </div>
+</div>
+
+<script define:vars={{ locale }}>
+  const i18n = {
+    en: { cart: "Your Cart", empty: "Your cart is empty", subtotal: "Subtotal", remove: "Remove", checkout: "Checkout" },
+    ne: { cart: "तपाईंको कार्ट", empty: "तपाईंको कार्ट खाली छ", subtotal: "उपकुल", remove: "हटाउनुहोस्", checkout: "चेकआउट" },
+    newa: { cart: "छिग्व म्हिग्व", empty: "छिग्व म्हिग्व असः खाली", subtotal: "जोड", remove: "असः दू", checkout: "म्हिग्व असः" }
+  };
+  const t = (key) => (i18n[locale] || i18n.en)[key] || key;
+  const CART_KEY = 'metalhub-cart';
+
+  function getCart() {
+    try { return JSON.parse(localStorage.getItem(CART_KEY) || '[]'); } catch { return []; }
+  }
+  function saveCart(items) { localStorage.setItem(CART_KEY, JSON.stringify(items)); }
+
+  function render() {
+    const cart = getCart();
+    const container = document.getElementById('cart-items');
+    const subtotalEl = document.getElementById('cart-subtotal');
+    const emptyEl = document.getElementById('cart-empty');
+    if (!container || !subtotalEl || !emptyEl) return;
+
+    if (cart.length === 0) {
+      container.innerHTML = '';
+      subtotalEl.innerHTML = '';
+      emptyEl.style.display = 'block';
+      return;
+    }
+
+    emptyEl.style.display = 'none';
+    let subtotal = 0;
+
+    container.innerHTML = cart.map((item, i) => {
+      subtotal += item.unitPrice * item.qty;
+      const options = Object.entries(item.selectedOptions || {}).map(([k,v]) => `${k}: ${v}`).join(', ');
+      return `
+        <div class="cart-item">
+          <div class="cart-item-info">
+            <p class="cart-item-name">${item.name}</p>
+            ${options ? `<div class="options">${options}</div>` : ''}
+            <div>NPR ${item.unitPrice.toLocaleString()} \u00d7 ${item.qty} = NPR ${(item.unitPrice * item.qty).toLocaleString()}</div>
+          </div>
+          <div class="cart-item-actions">
+            <button onclick="window.__cartUpdateQty(${i}, ${item.qty - 1})" aria-label="Decrease quantity">\u2212</button>
+            <span class="qty" aria-label="Quantity">${item.qty}</span>
+            <button onclick="window.__cartUpdateQty(${i}, ${item.qty + 1})" aria-label="Increase quantity">+</button>
+            <button class="remove-btn" onclick="window.__cartRemoveItem(${i})" aria-label="Remove item">\u00d7</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    subtotalEl.innerHTML = `
+      <div class="cart-subtotal">
+        <span>${t('subtotal')}</span>
+        <span>NPR ${subtotal.toLocaleString()}</span>
+      </div>
+      <a href="/${locale === 'en' ? '' : locale + '/'}checkout/" class="btn-checkout" style="text-align:center;display:block;text-decoration:none;">${t('checkout')}</a>
+    `;
+  }
+
+  window.__cartUpdateQty = function(index, qty) {
+    const cart = getCart();
+    if (cart[index]) {
+      cart[index].qty = Math.max(1, qty);
+      saveCart(cart);
+      render();
+    }
+  };
+
+  window.__cartRemoveItem = function(index) {
+    const cart = getCart();
+    cart.splice(index, 1);
+    saveCart(cart);
+    render();
+  };
+
+  document.addEventListener('astro:page-load', render);
+  render();
+</script>

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Metal Hub Admin</title>
+  <link rel="preconnect" href="https://unpkg.com" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #faf8f5;
+      color: #1a1a1a;
+    }
+  </style>
+</head>
+<body>
+  <script src="https://unpkg.com/@sveltia/cms/dist/sveltia-cms.js"></script>
+  <script>
+    if (typeof SveltiaCMS !== 'undefined') {
+      SveltiaCMS.init();
+    }
+  </script>
+</body>
+</html>

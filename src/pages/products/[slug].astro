@@ -1,0 +1,46 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import AttributeSelector from '../../components/AttributeSelector.astro';
+import { getCollection } from 'astro:content';
+import { getTranslations } from '../../lib/i18n';
+
+export async function getStaticPaths() {
+  const products = await getCollection('products');
+  return products.map((product) => ({
+    params: { slug: product.data.slug },
+    props: { product }
+  }));
+}
+
+const { product } = Astro.props;
+const locale = 'en';
+const t = getTranslations(locale);
+---
+<BaseLayout title={product.data.name.en} locale={locale} description={product.data.description.en}>
+  <section class="product-detail container">
+    <div class="product-detail-grid">
+      <div class="product-gallery">
+        <img
+          src={product.data.images[0] || '/images/products/placeholder.jpg'}
+          alt={product.data.name.en}
+        />
+      </div>
+      <div class="product-info">
+        <h1>{product.data.name.en}</h1>
+        <p class="description">{product.data.description.en}</p>
+
+        <div id="product-discount-data" style="display:none;">
+          {JSON.stringify(product.data.discount)}
+        </div>
+
+        <AttributeSelector
+          attributes={product.data.attributes}
+          locale={locale}
+          basePrice={product.data.basePrice}
+          productSlug={product.data.slug}
+          productName={product.data.name.en}
+        />
+      </div>
+    </div>
+  </section>
+</BaseLayout>
