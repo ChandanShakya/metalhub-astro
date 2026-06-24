@@ -25,3 +25,9 @@ AGENTS.md
 CLAUDE.md
 CLAUDE.local.md
 .mimocode/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
