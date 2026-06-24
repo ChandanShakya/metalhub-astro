@@ -11,7 +11,7 @@ const t = getTranslations(locale);
 
 <div class="mb-4">
   <label for="map" class="block font-semibold text-sm mb-2 text-text-1">{t("checkout.deliveryPoint")}</label>
-  <div id="map" data-ui-text={JSON.stringify({ pinSet: t("checkout.pinSet"), loadErr: t("checkout.mapLoadErr"), searchPlaceholder: t("checkout.searchPlaceholder") })} class="w-full h-105 border border-border rounded-xl mb-2 relative"></div>
+  <div id="map" data-ui-text={JSON.stringify({ pinSet: t("checkout.pinSet"), loadErr: t("checkout.mapLoadErr"), searchPlaceholder: t("checkout.searchPlaceholder"), gpsLocate: t("checkout.gpsLocate"), locating: t("checkout.locating"), gpsError: t("checkout.gpsError"), gpsDenied: t("checkout.gpsDenied"), gpsUnsupported: t("checkout.gpsUnsupported") })} class="w-full h-105 border border-border rounded-xl mb-2 relative isolate"></div>
   <div id="map-status" class="text-sm min-h-5 font-medium"></div>
 </div>
 
@@ -100,8 +100,37 @@ const t = getTranslations(locale);
       geocoder: geocoder,
       position: "topright",
       placeholder: uiText.searchPlaceholder,
-      defaultMarkGeocode: false
+      defaultMarkGeocode: true
     }).addTo(map);
+
+    var LocateControl = L.Control.extend({
+      options: { position: "topleft" },
+      onAdd: function() {
+        var container = L.DomUtil.create("div", "leaflet-bar leaflet-control");
+        container.innerHTML = '<button class="gps-btn" style="width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;border:none;background:#fff;border-radius:2px;" title="' + uiText.gpsLocate + '"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></button>';
+        L.DomEvent.disableClickPropagation(container);
+        L.DomEvent.on(container, "click", function() {
+          if (!navigator.geolocation) {
+            statusEl.textContent = uiText.gpsUnsupported;
+            statusEl.classList.add("text-sale");
+            statusEl.classList.remove("text-success");
+            return;
+          }
+          statusEl.textContent = uiText.locating;
+          statusEl.classList.remove("text-sale", "text-success");
+          navigator.geolocation.getCurrentPosition(function(pos) {
+            setMarker(L.latLng(pos.coords.latitude, pos.coords.longitude));
+            map.setView(L.latLng(pos.coords.latitude, pos.coords.longitude), 16);
+          }, function(err) {
+            statusEl.textContent = err.code === 1 ? uiText.gpsDenied : uiText.gpsError;
+            statusEl.classList.add("text-sale");
+            statusEl.classList.remove("text-success");
+          }, { enableHighAccuracy: true, timeout: 10000 });
+        });
+        return container;
+      }
+    });
+    map.addControl(new LocateControl());
 
     map.on("geocoder-markgeocode", function(e) {
       if (e.geocode && e.geocode.center) {
