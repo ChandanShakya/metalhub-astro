@@ -19,8 +19,9 @@ interface Props {
     basePrice: number;
     productSlug: string;
     productName: string;
+    productImage?: string;
 }
-const { attributes, locale, basePrice, productSlug, productName } = Astro.props;
+const { attributes, locale, basePrice, productSlug, productName, productImage } = Astro.props;
 const t = getTranslations(locale);
 const checkoutPath = locale === "en" ? "/checkout/" : `/${locale}/checkout/`;
 
@@ -82,10 +83,11 @@ function localize(obj: LocalizedString): string {
   </a>
 </div>
 
-<script is:inline define:vars={{ locale, checkoutPath }}>
+<script is:inline define:vars={{ checkoutPath, productImage }}>
+  function getLocale() { return document.documentElement.dataset.locale || "en"; }
   var CART_KEY = "metalhub-cart";
-  var addedText = { en: "Added!", ne: "थपियो!", newa: "दिगु!" }[locale] || "Added!";
-  var addText = { en: "Add to Cart", ne: "कार्टमा थप्नुहोस्", newa: "म्हिग्व यायं" }[locale] || "Add to Cart";
+  var addedTextMap = { en: "Added!", ne: "थपियो!", newa: "दिगु!" };
+  var addTextMap = { en: "Add to Cart", ne: "कार्टमा थप्नुहोस्", newa: "म्हिग्व यायं" };
 
   function getCart() {
     try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); } catch { return []; }
@@ -324,6 +326,7 @@ function localize(obj: LocalizedString): string {
         cart.push({
           slug: productSlug,
           name: productName,
+          image: productImage || "",
           images: getSelectedImages(),
           selectedOptions: options,
           selectedModifiers: modifiers,
@@ -335,11 +338,11 @@ function localize(obj: LocalizedString): string {
       }
 
       saveCart(cart);
-      btn.textContent = addedText;
+      btn.textContent = addedTextMap[getLocale()] || "Added!";
       btn.classList.add("bg-success");
       btn.classList.remove("bg-accent");
       setTimeout(function() {
-        btn.textContent = addText;
+        btn.textContent = addTextMap[getLocale()] || "Add to Cart";
         btn.classList.remove("bg-success");
         btn.classList.add("bg-accent");
       }, 1500);
@@ -350,6 +353,7 @@ function localize(obj: LocalizedString): string {
   }
 
   document.addEventListener("astro:page-load", function() {
+    if (!document.getElementById("add-to-cart-btn")) return;
     init();
     readURLParams();
     renderPrice();

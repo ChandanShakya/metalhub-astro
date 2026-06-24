@@ -11,14 +11,15 @@ const t = getTranslations(locale);
 
 <div class="mb-4">
   <label for="map" class="block font-semibold text-sm mb-2 text-text-1">{t("checkout.deliveryPoint")}</label>
-  <div id="map" class="w-full h-[420px] border border-border rounded-xl mb-2 relative"></div>
+  <div id="map" class="w-full h-105 border border-border rounded-xl mb-2 relative"></div>
   <div id="map-status" class="text-sm min-h-5 font-medium"></div>
 </div>
 
 <input type="hidden" id="delivery-lat" />
 <input type="hidden" id="delivery-lng" />
 
-<script is:inline define:vars={{ locale }}>
+<script is:inline>
+  function getLocale() { return document.documentElement.dataset.locale || "en"; }
   var STORAGE_KEY = "metalhub-customer";
   var PIN_SET_MSG = {
     en: "Pin set \u2014 tap Order to continue",
@@ -76,11 +77,11 @@ const t = getTranslations(locale);
           loadJS("https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.js", function() {
             initMap(mapEl, statusEl);
           }, function() {
-            statusEl.textContent = LOAD_ERR[locale] || LOAD_ERR.en;
+            statusEl.textContent = LOAD_ERR[getLocale()] || LOAD_ERR.en;
             statusEl.classList.add("text-sale");
           });
         }, function() {
-          statusEl.textContent = LOAD_ERR[locale] || LOAD_ERR.en;
+          statusEl.textContent = LOAD_ERR[getLocale()] || LOAD_ERR.en;
           statusEl.classList.add("text-sale");
         });
       }
@@ -108,7 +109,7 @@ const t = getTranslations(locale);
     new L.Control.Geocoder({
       geocoder: geocoder,
       position: "topright",
-      placeholder: locale === "en" ? "Search location..." : locale === "ne" ? "\u0938\u094d\u0925\u093e\u0928 \u0916\u094b\u091c\u094d\u0928\u0941\u0939\u094b\u0938\u094d..." : "\u0938\u094d\u0925\u093e\u0928 \u0916\u094b\u091c\u094d\u0928\u093e...",
+      placeholder: getLocale() === "en" ? "Search location..." : getLocale() === "ne" ? "\u0938\u094d\u0925\u093e\u0928 \u0916\u094b\u091c\u094d\u0928\u0941\u0939\u094b\u0938\u094d..." : "\u0938\u094d\u0925\u093e\u0928 \u0916\u094b\u091c\u094d\u0928\u093e...",
       defaultMarkGeocode: false
     }).addTo(map);
 
@@ -134,7 +135,7 @@ const t = getTranslations(locale);
         window.__saveCustomerLocation();
       }
 
-      statusEl.textContent = PIN_SET_MSG[locale] || PIN_SET_MSG.en;
+      statusEl.textContent = PIN_SET_MSG[getLocale()] || PIN_SET_MSG.en;
       statusEl.classList.add("text-success");
       statusEl.classList.remove("text-sale");
     }

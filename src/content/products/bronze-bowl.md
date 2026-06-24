@@ -9,7 +9,7 @@ description:
   ne: "विशेष अवसरका लागि सुन्दर काँसको भाँडा।"
   newa: "ज्वलिगु काँस म्ह:।"
 images:
-  - /images/products/placeholder.jpg
+  - /images/products/chares.jpg
 category: bronze
 basePrice: 2500
 inStock: true

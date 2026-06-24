@@ -22,14 +22,15 @@ const t = getTranslations(locale);
   </button>
 </div>
 
-<script is:inline define:vars={{ locale, whatsappNumber, messengerPage }}>
+<script is:inline define:vars={{ whatsappNumber, messengerPage }}>
+  function getLocale() { return document.documentElement.dataset.locale || "en"; }
   var CART_KEY = "metalhub-cart";
   var errorMessages = {
     en: { nameRequired: "Please enter your name.", phoneRequired: "Please enter your phone number.", phoneInvalid: "Please enter a valid 10-digit phone number.", locationRequired: "Please select a delivery location on the map.", cartEmpty: "Your cart is empty." },
     ne: { nameRequired: "कृपया आफ्नो नाम लेख्नुहोस्।", phoneRequired: "कृपया फोन नम्बर लेख्नुहोस्।", phoneInvalid: "कृपया मान्य १० अंकको फोन नम्बर लेख्नुहोस्।", locationRequired: "कृपया नक्सामा डेलिभरी स्थान छान्नुहोस्।", cartEmpty: "तपाईंको कार्ट खाली छ।" },
     newa: { nameRequired: "खास नां लेखु।", phoneRequired: "खास फोन नम्बर लेखु।", phoneInvalid: "खास मान्य १० अंक फोन नम्बर लेखु।", locationRequired: "खास नक्सा यायं डेलिभरी स्थान छिनु।", cartEmpty: "छिग्व म्हिग्व असः खाली।" }
   };
-  var em = errorMessages[locale] || errorMessages.en;
+  var em = errorMessages[getLocale()] || errorMessages.en;
 
   function getCart() {
     try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); } catch { return []; }
@@ -107,7 +108,7 @@ const t = getTranslations(locale);
 
       var params = new URLSearchParams();
       Object.entries(item.selectedOptions || {}).forEach(function(e) { params.set(e[0], e[1]); });
-      var productPath = locale === "en" ? "/products/" + item.slug + "/" : "/" + locale + "/products/" + item.slug + "/";
+      var productPath = getLocale() === "en" ? "/products/" + item.slug + "/" : "/" + getLocale() + "/products/" + item.slug + "/";
       var productUrl = window.location.origin + productPath + (params.toString() ? "?" + params.toString() : "");
       msg += "   " + productUrl + "\n";
     });

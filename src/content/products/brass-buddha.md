@@ -1,15 +1,15 @@
 ---
-slug: brass-chiba
+slug: brass-buddha
 name:
-  en: "Brass Chiba"
-  ne: "ब्रास चिया"
-  newa: "पित्तल चिया"
+  en: "Brass Buddha"
+  ne: "ब्रास बुद्ध"
+  newa: "पित्तल बुद्ध"
 description:
-  en: "Traditional brass chiba, hand-finished with care."
-  ne: "परम्परागत ब्रास चिया, हातले बनाइएको।"
-  newa: "परम्परागत पित्तल चिया, हातले बनाइएको।"
+  en: "Traditional brass buddha, hand-finished with care."
+  ne: "परम्परागत ब्रास बुद्ध, हातले बनाइएको।"
+  newa: "परम्परागत पित्तल बुद्ध, हातले बनाइएको।"
 images:
-  - /images/products/placeholder.jpg
+  - /images/products/buddha.jpg
 category: brass
 basePrice: 1800
 inStock: true

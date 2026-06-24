@@ -13,7 +13,7 @@ export default defineConfig({
         routing: { prefixDefaultLocale: false },
     },
     prefetch: {
-        prefetchAll: true,
+        prefetchAll: false,
         defaultStrategy: "hover",
     },
 });

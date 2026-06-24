@@ -9,7 +9,7 @@ description:
   ne: "दैनिक प्रयोगका लागि हातले हामेर बनाइएको तामाको गिलास।"
   newa: "दैनिक प्रयोग खालं तामा गिलास।"
 images:
-  - /images/products/placeholder.jpg
+  - /images/products/tumbler.jpg
 category: copper
 basePrice: 1200
 inStock: true
