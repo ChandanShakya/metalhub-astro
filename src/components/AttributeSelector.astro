@@ -59,7 +59,7 @@ function localize(obj: LocalizedString): string {
 <div id="price-display" class="text-2xl font-extrabold my-4 text-text-1"></div>
 
 <div class="flex items-center gap-3 mb-2">
-  <label class="text-sm font-medium text-text-2">Qty:</label>
+  <label class="text-sm font-medium text-text-2">{t("products.qty")}</label>
   <div class="flex items-center border-2 border-border rounded-lg overflow-hidden">
     <button id="qty-minus" class="w-9 h-9 flex items-center justify-center bg-surface-2 cursor-pointer transition-colors hover:bg-surface-3 text-text-1 font-bold border-none">-</button>
     <input id="qty-input" type="number" min="1" max="99" value="1" class="w-12 h-9 text-center border-none bg-surface-2 text-text-1 font-semibold text-base [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
@@ -74,6 +74,8 @@ function localize(obj: LocalizedString): string {
     data-base-price={basePrice}
     data-product-slug={productSlug}
     data-product-name={productName}
+    data-product-image={productImage}
+    data-ui-text={JSON.stringify({ added: t("products.added"), addToCart: t("products.addToCart"), percentOff: t("products.percentOff"), amountOff: t("products.amountOff") })}
     disabled
   >
     {t("products.addToCart")}
@@ -83,11 +85,10 @@ function localize(obj: LocalizedString): string {
   </a>
 </div>
 
-<script is:inline define:vars={{ checkoutPath, productImage }}>
-  function getLocale() { return document.documentElement.dataset.locale || "en"; }
+<script is:inline define:vars={{ checkoutPath }}>
+  function getLocale() { var m = window.location.pathname.match(/^\/(ne|newa)\//); return m ? m[1] : document.documentElement.dataset.locale || "en"; }
   var CART_KEY = "metalhub-cart";
-  var addedTextMap = { en: "Added!", ne: "थपियो!", newa: "दिगु!" };
-  var addTextMap = { en: "Add to Cart", ne: "कार्टमा थप्नुहोस्", newa: "म्हिग्व यायं" };
+  var uiText = JSON.parse(document.getElementById("add-to-cart-btn")?.getAttribute("data-ui-text") || "{}");
 
   function getCart() {
     try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); } catch { return []; }
@@ -206,8 +207,8 @@ function localize(obj: LocalizedString): string {
     }
 
     var label = bestDiscount.type === "percentage"
-      ? bestDiscount.value + "% off"
-      : "NPR " + bestDiscount.value + " off";
+      ? uiText.percentOff.replace("{v}", bestDiscount.value)
+      : uiText.amountOff.replace("{v}", bestDiscount.value);
 
     return { price: discounted, original: total, hasDiscount: true, label: label };
   }
@@ -267,12 +268,13 @@ function localize(obj: LocalizedString): string {
     }
   }
 
-  var _attrAbort = null;
+  window.__attrCtx = window.__attrCtx || { id: 0, abort: null };
+  var _attrId = ++window.__attrCtx.id;
 
   function init() {
-    if (_attrAbort) _attrAbort.abort();
-    _attrAbort = new AbortController();
-    var signal = _attrAbort.signal;
+    if (window.__attrCtx.abort) window.__attrCtx.abort.abort();
+    window.__attrCtx.abort = new AbortController();
+    var signal = window.__attrCtx.abort.signal;
 
     document.querySelectorAll(".attr-option").forEach(function(btn) {
       btn.addEventListener("click", function() {
@@ -310,6 +312,7 @@ function localize(obj: LocalizedString): string {
       var basePrice = parseFloat(btn.getAttribute("data-base-price") || "0");
       var productSlug = btn.getAttribute("data-product-slug") || "";
       var productName = btn.getAttribute("data-product-name") || "";
+      var productImage = btn.getAttribute("data-product-image") || "";
 
       var result = calculatePrice(basePrice);
       var cart = getCart();
@@ -326,7 +329,7 @@ function localize(obj: LocalizedString): string {
         cart.push({
           slug: productSlug,
           name: productName,
-          image: productImage || "",
+          image: productImage,
           images: getSelectedImages(),
           selectedOptions: options,
           selectedModifiers: modifiers,
@@ -338,11 +341,11 @@ function localize(obj: LocalizedString): string {
       }
 
       saveCart(cart);
-      btn.textContent = addedTextMap[getLocale()] || "Added!";
+      btn.textContent = uiText.added;
       btn.classList.add("bg-success");
       btn.classList.remove("bg-accent");
       setTimeout(function() {
-        btn.textContent = addTextMap[getLocale()] || "Add to Cart";
+        btn.textContent = uiText.addToCart;
         btn.classList.remove("bg-success");
         btn.classList.add("bg-accent");
       }, 1500);
@@ -353,6 +356,7 @@ function localize(obj: LocalizedString): string {
   }
 
   document.addEventListener("astro:page-load", function() {
+    if (window.__attrCtx.id !== _attrId) return;
     if (!document.getElementById("add-to-cart-btn")) return;
     init();
     readURLParams();

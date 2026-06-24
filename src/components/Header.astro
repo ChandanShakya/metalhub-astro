@@ -63,7 +63,7 @@ const langs = ["en", "ne", "newa"] as const;
           </svg>
           <span id="cart-badge" class="absolute -top-1.5 -right-2 hidden bg-sale text-white text-[0.6rem] font-bold min-w-4 h-4 rounded-full items-center justify-center px-1 leading-none" aria-label="items in cart">0</span>
         </a>
-        <div id="cart-dropdown" class="hidden fixed md:absolute top-full right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-surface-2 border border-border rounded-xl shadow-xl z-200 overflow-hidden">
+        <div id="cart-dropdown" data-ui-text={JSON.stringify({ empty: t("cart.empty"), subtotal: t("cart.subtotal"), checkout: t("cart.checkout"), noImg: t("cart.noImg") })} class="hidden fixed md:absolute top-full right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-surface-2 border border-border rounded-xl shadow-xl z-200 overflow-hidden">
           <div class="p-4">
             <div id="cart-dropdown-items"></div>
             <div id="cart-empty" class="text-center py-4 text-text-3 text-sm"></div>
@@ -130,14 +130,9 @@ const langs = ["en", "ne", "newa"] as const;
 </div>
 
 <script is:inline define:vars={{ langLabels: JSON.stringify(langLabels) }}>
-  function getLocale() { return document.documentElement.dataset.locale || "en"; }
+  function getLocale() { var m = window.location.pathname.match(/^\/(ne|newa)\//); return m ? m[1] : document.documentElement.dataset.locale || "en"; }
   var CART_KEY = "metalhub-cart";
-  var i18n = {
-    en: { empty: "Your cart is empty", subtotal: "Subtotal", checkout: "Checkout", remove: "Remove" },
-    ne: { empty: "तपाईंको कार्ट खाली छ", subtotal: "उपकुल", checkout: "चेकआउट", remove: "हटाउनुहोस्" },
-    newa: { empty: "छिग्व म्हिग्व असः खाली", subtotal: "जोड", remove: "असः दू", checkout: "म्हिग्व असः" }
-  };
-  var t = function(key) { return (i18n[getLocale()] || i18n.en)[key] || key; };
+  var uiText = JSON.parse(document.getElementById("cart-dropdown")?.getAttribute("data-ui-text") || "{}");
 
   function getCart() {
     try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); } catch { return []; }
@@ -175,7 +170,7 @@ const langs = ["en", "ne", "newa"] as const;
 
     if (cart.length === 0) {
       itemsEl.innerHTML = "";
-      emptyEl.textContent = t("empty");
+      emptyEl.textContent = uiText.empty;
       emptyEl.classList.remove("hidden");
       footerEl.innerHTML = "";
       return;
@@ -191,7 +186,12 @@ const langs = ["en", "ne", "newa"] as const;
       var queryStr = params.toString() ? "?" + params.toString() : "";
       var loc = getLocale();
       var productHref = (loc === "en" ? "/products/" : "/" + loc + "/products/") + item.slug + "/" + queryStr;
+      var imgSrc = (item.images && item.images.length > 0 ? item.images[0] : "") || item.image || "";
+      var imgHtml = imgSrc
+        ? '<img src="' + imgSrc + '" alt="' + item.name + '" class="w-10 h-10 object-cover rounded-lg shrink-0" loading="lazy" decoding="async" />'
+        : '<div class="w-10 h-10 rounded-lg bg-gradient-to-br from-surface-3 to-border shrink-0 flex items-center justify-center text-text-3 text-xs">' + uiText.noImg + '</div>';
       return '<div class="flex items-center gap-3 py-2 border-b border-border last:border-0">' +
+        imgHtml +
         '<div class="flex-1 min-w-0">' +
           '<a href="' + productHref + '" class="text-sm font-semibold truncate text-text-1 no-underline hover:text-accent transition-colors block">' + item.name + '</a>' +
           (opts ? '<p class="text-xs text-text-3 truncate">' + opts + '</p>' : '') +
@@ -209,10 +209,10 @@ const langs = ["en", "ne", "newa"] as const;
     var checkoutHref = getLocale() === "en" ? "/checkout/" : "/" + getLocale() + "/checkout/";
     footerEl.innerHTML =
       '<div class="flex justify-between items-center font-bold text-sm pt-2 mt-1 border-t border-border">' +
-        '<span>' + t("subtotal") + '</span>' +
+        '<span>' + uiText.subtotal + '</span>' +
         '<span>NPR ' + subtotal.toLocaleString() + '</span>' +
       '</div>' +
-      '<a href="' + checkoutHref + '" class="mt-3 block text-center bg-success text-white rounded-lg py-2 text-sm font-semibold no-underline hover:bg-green-800 transition-colors">' + t("checkout") + '</a>';
+      '<a href="' + checkoutHref + '" class="mt-3 block text-center bg-success text-white rounded-lg py-2 text-sm font-semibold no-underline hover:bg-green-800 transition-colors">' + uiText.checkout + '</a>';
   }
 
   window.__cartUpdateQty = function(index, qty) {
@@ -251,7 +251,8 @@ const langs = ["en", "ne", "newa"] as const;
     }
   }
 
-  var _headerAbort = null;
+  window.__headerCtx = window.__headerCtx || { id: 0, abort: null };
+  var _headerId = ++window.__headerCtx.id;
 
   document.addEventListener("change", function(e) {
     if (e.target.classList.contains("lang-select")) {
@@ -264,9 +265,10 @@ const langs = ["en", "ne", "newa"] as const;
   });
 
   document.addEventListener("astro:page-load", function() {
-    if (_headerAbort) _headerAbort.abort();
-    _headerAbort = new AbortController();
-    var signal = _headerAbort.signal;
+    if (window.__headerCtx.id !== _headerId) return;
+    if (window.__headerCtx.abort) window.__headerCtx.abort.abort();
+    window.__headerCtx.abort = new AbortController();
+    var signal = window.__headerCtx.abort.signal;
 
     updateCartBadge();
     renderCartDropdown();

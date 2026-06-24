@@ -66,8 +66,8 @@ const totalPages = Math.ceil(products.length / PER_PAGE);
 
         {totalPages > 1 && (
           <div class="text-center mt-8">
-            <button id="load-more-btn" class="bg-surface-2 border border-border rounded-xl px-6 py-3 text-sm font-semibold cursor-pointer transition-[colors,transform] text-text-2 hover:border-accent hover:text-accent hover:bg-surface-3">
-              Load More
+            <button id="load-more-btn" data-ui-text={JSON.stringify({ loadMore: t("products.loadMore"), showing: t("products.showing") })} class="bg-surface-2 border border-border rounded-xl px-6 py-3 text-sm font-semibold cursor-pointer transition-[colors,transform] text-text-2 hover:border-accent hover:text-accent hover:bg-surface-3">
+              {t("products.loadMore")}
             </button>
             <p id="load-more-info" class="text-xs text-text-3 mt-2"></p>
           </div>
@@ -77,12 +77,13 @@ const totalPages = Math.ceil(products.length / PER_PAGE);
   </section>
 
   <script>
-    var _productsAbort: AbortController | null = null;
+    window.__productsCtx = window.__productsCtx || { id: 0, abort: null };
+    var _productsId = ++window.__productsCtx.id;
 
     function initFiltersAndPagination() {
-      if (_productsAbort) _productsAbort.abort();
-      _productsAbort = new AbortController();
-      var signal = _productsAbort.signal;
+      if (window.__productsCtx.abort) window.__productsCtx.abort.abort();
+      window.__productsCtx.abort = new AbortController();
+      var signal = window.__productsCtx.abort.signal;
 
       var grid = document.getElementById("product-grid");
       var perPage = parseInt(grid?.getAttribute("data-per-page") || "9");
@@ -121,7 +122,9 @@ const totalPages = Math.ceil(products.length / PER_PAGE);
             loadMoreBtn.classList.toggle("hidden", visibleCount <= perPage * currentPage);
           }
           if (loadMoreInfo) {
-            loadMoreInfo.textContent = "Showing " + Math.min(visibleCount, perPage * currentPage) + " of " + totalMatch + " products";
+            var loadMoreBtnEl = document.getElementById("load-more-btn");
+            var uiText = loadMoreBtnEl ? JSON.parse(loadMoreBtnEl.getAttribute("data-ui-text") || "{}") : {};
+            loadMoreInfo.textContent = (uiText.showing || "Showing {v} of {t} products").replace("{v}", String(Math.min(visibleCount, perPage * currentPage))).replace("{t}", String(totalMatch));
           }
         }, { signal });
       });
@@ -152,7 +155,9 @@ const totalPages = Math.ceil(products.length / PER_PAGE);
           }
           var loadMoreInfo = document.getElementById("load-more-info");
           if (loadMoreInfo) {
-            loadMoreInfo.textContent = "Showing " + totalVisible + " of " + totalMatch + " products";
+            var loadMoreBtnEl = document.getElementById("load-more-btn");
+            var uiText = loadMoreBtnEl ? JSON.parse(loadMoreBtnEl.getAttribute("data-ui-text") || "{}") : {};
+            loadMoreInfo.textContent = (uiText.showing || "Showing {v} of {t} products").replace("{v}", String(totalVisible)).replace("{t}", String(totalMatch));
           }
         }, { signal });
       }
@@ -163,6 +168,9 @@ const totalPages = Math.ceil(products.length / PER_PAGE);
       if (activeBtn) activeBtn.click();
     }
 
-    document.addEventListener("astro:page-load", initFiltersAndPagination);
+    document.addEventListener("astro:page-load", function() {
+      if (window.__productsCtx.id !== _productsId) return;
+      initFiltersAndPagination();
+    });
   </script>
 </BaseLayout>

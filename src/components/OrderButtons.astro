@@ -11,7 +11,7 @@ const { locale, whatsappNumber, messengerPage } = Astro.props;
 const t = getTranslations(locale);
 ---
 
-<div id="order-error" class="hidden bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-4"></div>
+<div id="order-error" data-ui-text={JSON.stringify({ nameRequired: t("checkout.nameRequired"), phoneRequired: t("checkout.phoneRequired"), phoneInvalid: t("checkout.phoneInvalid"), locationRequired: t("checkout.locationRequired"), cartEmpty: t("checkout.cartEmpty") })} class="hidden bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-4"></div>
 
 <div class="flex flex-col gap-3 mt-6">
   <button id="btn-whatsapp" disabled class="bg-whatsapp text-white border-none rounded-xl py-3.5 px-5 text-base font-semibold cursor-not-allowed transition-[colors,transform] opacity-50 hover:bg-[#1eac5a] hover:-translate-y-px hover:shadow-[0_4px_12px_rgb(37_211_102/0.3)]">
@@ -23,14 +23,9 @@ const t = getTranslations(locale);
 </div>
 
 <script is:inline define:vars={{ whatsappNumber, messengerPage }}>
-  function getLocale() { return document.documentElement.dataset.locale || "en"; }
+  function getLocale() { var m = window.location.pathname.match(/^\/(ne|newa)\//); return m ? m[1] : document.documentElement.dataset.locale || "en"; }
   var CART_KEY = "metalhub-cart";
-  var errorMessages = {
-    en: { nameRequired: "Please enter your name.", phoneRequired: "Please enter your phone number.", phoneInvalid: "Please enter a valid 10-digit phone number.", locationRequired: "Please select a delivery location on the map.", cartEmpty: "Your cart is empty." },
-    ne: { nameRequired: "कृपया आफ्नो नाम लेख्नुहोस्।", phoneRequired: "कृपया फोन नम्बर लेख्नुहोस्।", phoneInvalid: "कृपया मान्य १० अंकको फोन नम्बर लेख्नुहोस्।", locationRequired: "कृपया नक्सामा डेलिभरी स्थान छान्नुहोस्।", cartEmpty: "तपाईंको कार्ट खाली छ।" },
-    newa: { nameRequired: "खास नां लेखु।", phoneRequired: "खास फोन नम्बर लेखु।", phoneInvalid: "खास मान्य १० अंक फोन नम्बर लेखु।", locationRequired: "खास नक्सा यायं डेलिभरी स्थान छिनु।", cartEmpty: "छिग्व म्हिग्व असः खाली।" }
-  };
-  var em = errorMessages[getLocale()] || errorMessages.en;
+  var uiText = JSON.parse(document.getElementById("order-error")?.getAttribute("data-ui-text") || "{}");
 
   function getCart() {
     try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); } catch { return []; }
@@ -76,18 +71,18 @@ const t = getTranslations(locale);
   function validate() {
     clearError();
     var cart = getCart();
-    if (cart.length === 0) { showError(em.cartEmpty); return false; }
+    if (cart.length === 0) { showError(uiText.cartEmpty); return false; }
 
     var name = (document.getElementById("customer-name")?.value || "").trim();
-    if (!name || name.length < 2) { showError(em.nameRequired); document.getElementById("customer-name")?.focus(); return false; }
+    if (!name || name.length < 2) { showError(uiText.nameRequired); document.getElementById("customer-name")?.focus(); return false; }
 
     var phone = (document.getElementById("customer-phone")?.value || "").trim();
-    if (!phone) { showError(em.phoneRequired); document.getElementById("customer-phone")?.focus(); return false; }
-    if (!/^\d{10}$/.test(phone)) { showError(em.phoneInvalid); document.getElementById("customer-phone")?.focus(); return false; }
+    if (!phone) { showError(uiText.phoneRequired); document.getElementById("customer-phone")?.focus(); return false; }
+    if (!/^\d{10}$/.test(phone)) { showError(uiText.phoneInvalid); document.getElementById("customer-phone")?.focus(); return false; }
 
     var lat = document.getElementById("delivery-lat")?.value;
     var lng = document.getElementById("delivery-lng")?.value;
-    if (!lat || !lng) { showError(em.locationRequired); return false; }
+    if (!lat || !lng) { showError(uiText.locationRequired); return false; }
 
     return true;
   }
@@ -146,12 +141,14 @@ const t = getTranslations(locale);
     window.open("https://m.me/" + messengerPage + "?text=" + encodeURIComponent(msg), "_blank");
   }
 
-  var _orderAbort = null;
+  window.__orderCtx = window.__orderCtx || { id: 0, abort: null };
+  var _orderId = ++window.__orderCtx.id;
 
   document.addEventListener("astro:page-load", function() {
-    if (_orderAbort) _orderAbort.abort();
-    _orderAbort = new AbortController();
-    var signal = _orderAbort.signal;
+    if (window.__orderCtx.id !== _orderId) return;
+    if (window.__orderCtx.abort) window.__orderCtx.abort.abort();
+    window.__orderCtx.abort = new AbortController();
+    var signal = window.__orderCtx.abort.signal;
 
     var whatsappBtn = document.getElementById("btn-whatsapp");
     var messengerBtn = document.getElementById("btn-messenger");

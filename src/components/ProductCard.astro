@@ -1,4 +1,5 @@
 ---
+import { Image } from "astro:assets";
 import { getTranslations, type Locale, localizedPath } from "../lib/i18n";
 import { formatPrice } from "../lib/pricing";
 
@@ -19,7 +20,7 @@ const { slug, name, category, image, price, originalPrice, hasDiscount, discount
 const t = getTranslations(locale);
 ---
 <a href={localizedPath(`/products/${slug}/`, locale)} class="block bg-surface-2 border border-border rounded-xl overflow-hidden no-underline text-inherit transition-[colors,transform] duration-300 [perspective:800px] hover:-translate-y-1 hover:rotate-x-[1.5deg] hover:shadow-[0_20px_40px_-10px_rgb(15_23_42/0.15)]">
-  <img src={image} alt={name} class="w-full h-48 md:h-64 object-cover bg-gradient-to-br from-surface-3 to-border" loading="eager" decoding="async" width="400" height="300" />
+  <Image src={image} alt={name} class="w-full h-48 md:h-64 object-cover bg-gradient-to-br from-surface-3 to-border" width={400} height={300} />
   <div class="p-4">
     <h2 class="text-base font-semibold mb-1 flex items-center flex-wrap gap-1.5">
       {name}

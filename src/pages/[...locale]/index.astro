@@ -1,4 +1,5 @@
 ---
+import { Image } from "astro:assets";
 import { getCollection } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getTranslations, locales, localizedPath } from "../../lib/i18n";
@@ -32,7 +33,7 @@ const featured = products.filter((p) => p.data.featured && p.data.inStock).slice
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
         {featured.map((product) => (
           <a href={localizedPath(`/products/${product.data.slug}/`, locale)} class="block bg-surface-2 border border-border rounded-xl overflow-hidden no-underline text-inherit transition-[colors,transform] duration-300 [perspective:800px] hover:-translate-y-1 hover:rotate-x-[1.5deg] hover:shadow-[0_20px_40px_-10px_rgb(15_23_42/0.15)]">
-            <img src={product.data.images[0] || "/images/products/placeholder.jpg"} alt={product.data.name[locale as keyof typeof product.data.name] || product.data.name.en} class="w-full h-48 md:h-64 object-cover bg-gradient-to-br from-surface-3 to-border" loading="eager" width="600" height="400" />
+            <Image src={product.data.images[0] || "/images/products/placeholder.jpg"} alt={product.data.name[locale as keyof typeof product.data.name] || product.data.name.en} class="w-full h-48 md:h-64 object-cover bg-gradient-to-br from-surface-3 to-border" width={600} height={400} />
             <div class="p-4">
               <h2 class="text-base font-semibold mb-1">{product.data.name[locale as keyof typeof product.data.name] || product.data.name.en}</h2>
               <div class="text-xs text-text-3 mb-2 capitalize">{product.data.category}</div>

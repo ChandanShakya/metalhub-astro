@@ -1,11 +1,22 @@
 ---
+import { getTranslations, type Locale } from "../lib/i18n";
+
 interface Props {
     showCheckoutLink?: boolean;
+    locale: Locale;
 }
-const { showCheckoutLink = true } = Astro.props;
+const { showCheckoutLink = true, locale } = Astro.props;
+const t = getTranslations(locale);
 ---
 
-<div id="cart-widget">
+<div id="cart-widget" data-ui-text={JSON.stringify({
+    title: t("cart.title"),
+    empty: t("cart.empty"),
+    subtotal: t("cart.subtotal"),
+    checkout: t("cart.checkout"),
+    clearAll: t("cart.clearAll"),
+    noImg: t("cart.noImg"),
+})}>
   <div class="mx-auto max-w-site px-4 py-8">
     <h2 id="cart-title" class="text-2xl font-bold mb-5"></h2>
     <div id="cart-items"></div>
@@ -15,13 +26,8 @@ const { showCheckoutLink = true } = Astro.props;
 </div>
 
 <script is:inline define:vars={{ showCheckoutLink }}>
-  function getLocale() { return document.documentElement.dataset.locale || "en"; }
-  const i18n = {
-    en: { title: "Your Cart", empty: "Your cart is empty", subtotal: "Subtotal", remove: "Remove", checkout: "Checkout", clearAll: "Clear All" },
-    ne: { title: "तपाईंको कार्ट", empty: "तपाईंको कार्ट खाली छ", subtotal: "उपकुल", remove: "हटाउनुहोस्", checkout: "चेकआउट", clearAll: "सबै सफा गर्नुहोस्" },
-    newa: { title: "छिग्व म्हिग्व", empty: "छिग्व म्हिग्व असः खाली", subtotal: "जोड", remove: "असः दू", checkout: "म्हिग्व असः", clearAll: "सबै खुम्चा" }
-  };
-  const t = (key) => (i18n[getLocale()] || i18n.en)[key] || key;
+  function getLocale() { var m = window.location.pathname.match(/^\/(ne|newa)\//); return m ? m[1] : document.documentElement.dataset.locale || "en"; }
+  var uiText = JSON.parse(document.getElementById("cart-widget")?.getAttribute("data-ui-text") || "{}");
   const CART_KEY = "metalhub-cart";
 
   function getCart() {
@@ -40,12 +46,12 @@ const { showCheckoutLink = true } = Astro.props;
     const titleEl = document.getElementById("cart-title");
     if (!container || !subtotalEl || !emptyEl || !titleEl) return;
 
-    titleEl.textContent = t("title");
+    titleEl.textContent = uiText.title;
 
     if (cart.length === 0) {
       container.innerHTML = "";
       subtotalEl.innerHTML = "";
-      emptyEl.textContent = t("empty");
+      emptyEl.textContent = uiText.empty;
       emptyEl.classList.remove("hidden");
       return;
     }
@@ -56,10 +62,10 @@ const { showCheckoutLink = true } = Astro.props;
     container.innerHTML = '<div class="space-y-4">' + cart.map((item, i) => {
       subtotal += item.unitPrice * item.qty;
       const options = Object.entries(item.selectedOptions || {}).map(([k,v]) => k + ": " + v).join(", ");
-      var imgSrc = (item.images && item.images.length > 0) ? item.images[0] : (item.image || "");
+      var imgSrc = (item.images && item.images.length > 0 ? item.images[0] : "") || item.image || "";
       var imgHtml = imgSrc
         ? '<img src="' + imgSrc + '" alt="' + item.name + '" class="w-16 h-16 object-cover rounded-lg shrink-0" loading="lazy" decoding="async" />'
-        : '<div class="w-16 h-16 rounded-lg bg-gradient-to-br from-surface-3 to-border shrink-0 flex items-center justify-center text-text-3 text-xs">No img</div>';
+        : '<div class="w-16 h-16 rounded-lg bg-gradient-to-br from-surface-3 to-border shrink-0 flex items-center justify-center text-text-3 text-xs">' + uiText.noImg + '</div>';
       var loc = getLocale();
       var productHref = (loc === "en" ? "/products/" : "/" + loc + "/products/") + item.slug + "/" + (Object.keys(item.selectedOptions || {}).length > 0 ? "?" + new URLSearchParams(item.selectedOptions).toString() : "");
       return '<div class="flex items-center gap-4 p-4 bg-surface-2 border border-border rounded-xl">' +
@@ -79,11 +85,11 @@ const { showCheckoutLink = true } = Astro.props;
     }).join("") + '</div>';
 
     const checkoutHref = getLocale() === "en" ? "/checkout/" : "/" + getLocale() + "/checkout/";
-    const checkoutBtn = showCheckoutLink ? '<a href="' + checkoutHref + '" class="mt-4 inline-flex items-center justify-center w-full bg-success text-white border-none rounded-xl py-3 px-6 text-base font-semibold cursor-pointer no-underline transition-[colors,transform] hover:bg-green-800 hover:-translate-y-0.5">' + t("checkout") + '</a>' : "";
-    const clearAllBtn = '<button onclick="window.__cartClearAll()" class="mt-2 w-full inline-flex items-center justify-center bg-surface-2 border border-border text-text-2 rounded-xl py-2.5 px-6 text-sm font-semibold cursor-pointer transition-[colors,transform] hover:border-sale hover:text-sale hover:-translate-y-0.5">' + t("clearAll") + '</button>';
+    const checkoutBtn = showCheckoutLink ? '<a href="' + checkoutHref + '" class="mt-4 inline-flex items-center justify-center w-full bg-success text-white border-none rounded-xl py-3 px-6 text-base font-semibold cursor-pointer no-underline transition-[colors,transform] hover:bg-green-800 hover:-translate-y-0.5">' + uiText.checkout + '</a>' : "";
+    const clearAllBtn = '<button onclick="window.__cartClearAll()" class="mt-2 w-full inline-flex items-center justify-center bg-surface-2 border border-border text-text-2 rounded-xl py-2.5 px-6 text-sm font-semibold cursor-pointer transition-[colors,transform] hover:border-sale hover:text-sale hover:-translate-y-0.5">' + uiText.clearAll + '</button>';
     subtotalEl.innerHTML =
       '<div class="flex justify-between items-center text-xl font-extrabold py-5 border-t-2 border-border mt-2">' +
-        '<span>' + t("subtotal") + '</span>' +
+        '<span>' + uiText.subtotal + '</span>' +
         '<span>NPR ' + subtotal.toLocaleString() + '</span>' +
       '</div>' +
       clearAllBtn +

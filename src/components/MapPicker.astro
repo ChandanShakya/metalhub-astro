@@ -11,7 +11,7 @@ const t = getTranslations(locale);
 
 <div class="mb-4">
   <label for="map" class="block font-semibold text-sm mb-2 text-text-1">{t("checkout.deliveryPoint")}</label>
-  <div id="map" class="w-full h-105 border border-border rounded-xl mb-2 relative"></div>
+  <div id="map" data-ui-text={JSON.stringify({ pinSet: t("checkout.pinSet"), loadErr: t("checkout.mapLoadErr"), searchPlaceholder: t("checkout.searchPlaceholder") })} class="w-full h-105 border border-border rounded-xl mb-2 relative"></div>
   <div id="map-status" class="text-sm min-h-5 font-medium"></div>
 </div>
 
@@ -19,18 +19,9 @@ const t = getTranslations(locale);
 <input type="hidden" id="delivery-lng" />
 
 <script is:inline>
-  function getLocale() { return document.documentElement.dataset.locale || "en"; }
+  function getLocale() { var m = window.location.pathname.match(/^\/(ne|newa)\//); return m ? m[1] : document.documentElement.dataset.locale || "en"; }
   var STORAGE_KEY = "metalhub-customer";
-  var PIN_SET_MSG = {
-    en: "Pin set \u2014 tap Order to continue",
-    ne: "\u092a\u093f\u0928 \u0938\u0947\u091f \u092d\u092f\u094b \u2014 \u0905\u0930\u094d\u0921\u0930 \u0917\u0930\u094d\u0928 \u091f\u094d\u092f\u093e\u092a \u0917\u0930\u094d\u0928\u0941\u0939\u094b\u0938\u094d",
-    newa: "\u092a\u093f\u0928 \u0938\u0947\u091f \u092d\u092f \u2014 \u0905\u0938\u094d\u0935 \u091f\u094d\u092f\u093e\u092a"
-  };
-  var LOAD_ERR = {
-    en: "Failed to load map. Please check your connection.",
-    ne: "\u0928\u0915\u094d\u0938\u093e \u0932\u094b\u0921 \u0917\u0930\u094d\u0928 \u0938\u0915\u094d\u092f\u094b\u0928\u0964 \u0915\u0943\u092a\u092f\u093e \u0906\u092B\u094d\u0928\u093e \u0915\u091c\u0932\u0947\u0938\u094d \u091a\u094d\u091f\u094d\u0928\u0941\u0939\u094b\u0938\u094d\u0964",
-    newa: "\u0928\u0915\u094d\u0938\u093e \u0932\u094b\u0921 \u0917\u0930\u094d\u0928 \u0938\u0915\u094d\u092f\u094b\u0928\u0964 \u0916\u093e\u0938 \u0915\u091c\u0932\u0947\u0938\u094d \u091a\u094d\u091f\u094d\u0928\u0941\u0939\u094b\u0938\u094d\u0964"
-  };
+  var uiText = JSON.parse(document.getElementById("map")?.getAttribute("data-ui-text") || "{}");
 
   function loadCustomer() {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch { return {}; }
@@ -77,11 +68,11 @@ const t = getTranslations(locale);
           loadJS("https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.js", function() {
             initMap(mapEl, statusEl);
           }, function() {
-            statusEl.textContent = LOAD_ERR[getLocale()] || LOAD_ERR.en;
+            statusEl.textContent = uiText.loadErr;
             statusEl.classList.add("text-sale");
           });
         }, function() {
-          statusEl.textContent = LOAD_ERR[getLocale()] || LOAD_ERR.en;
+          statusEl.textContent = uiText.loadErr;
           statusEl.classList.add("text-sale");
         });
       }
@@ -109,7 +100,7 @@ const t = getTranslations(locale);
     new L.Control.Geocoder({
       geocoder: geocoder,
       position: "topright",
-      placeholder: getLocale() === "en" ? "Search location..." : getLocale() === "ne" ? "\u0938\u094d\u0925\u093e\u0928 \u0916\u094b\u091c\u094d\u0928\u0941\u0939\u094b\u0938\u094d..." : "\u0938\u094d\u0925\u093e\u0928 \u0916\u094b\u091c\u094d\u0928\u093e...",
+      placeholder: uiText.searchPlaceholder,
       defaultMarkGeocode: false
     }).addTo(map);
 
@@ -135,7 +126,7 @@ const t = getTranslations(locale);
         window.__saveCustomerLocation();
       }
 
-      statusEl.textContent = PIN_SET_MSG[getLocale()] || PIN_SET_MSG.en;
+      statusEl.textContent = uiText.pinSet;
       statusEl.classList.add("text-success");
       statusEl.classList.remove("text-sale");
     }
