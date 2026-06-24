@@ -19,9 +19,10 @@ interface Props {
     basePrice: number;
     productSlug: string;
     productName: string;
+    productNameAll: LocalizedString;
     productImage?: string;
 }
-const { attributes, locale, basePrice, productSlug, productName, productImage } = Astro.props;
+const { attributes, locale, basePrice, productSlug, productName, productNameAll, productImage } = Astro.props;
 const t = getTranslations(locale);
 const checkoutPath = locale === "en" ? "/checkout/" : `/${locale}/checkout/`;
 
@@ -74,6 +75,7 @@ function localize(obj: LocalizedString): string {
     data-base-price={basePrice}
     data-product-slug={productSlug}
     data-product-name={productName}
+    data-product-name-all={JSON.stringify(productNameAll)}
     data-product-image={productImage}
     data-ui-text={JSON.stringify({ added: t("products.added"), addToCart: t("products.addToCart"), percentOff: t("products.percentOff"), amountOff: t("products.amountOff") })}
     disabled
@@ -311,6 +313,7 @@ function localize(obj: LocalizedString): string {
       var basePrice = parseFloat(btn.getAttribute("data-base-price") || "0");
       var productSlug = btn.getAttribute("data-product-slug") || "";
       var productName = btn.getAttribute("data-product-name") || "";
+      var productNameAll = JSON.parse(btn.getAttribute("data-product-name-all") || "{}");
       var productImage = btn.getAttribute("data-product-image") || "";
 
       var result = calculatePrice(basePrice);
@@ -328,6 +331,7 @@ function localize(obj: LocalizedString): string {
         cart.push({
           slug: productSlug,
           name: productName,
+          nameAll: productNameAll,
           image: productImage,
           images: getSelectedImages(),
           selectedOptions: options,

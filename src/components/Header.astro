@@ -1,5 +1,5 @@
 ---
-import { getTranslations, type Locale, localizedPath } from "../lib/i18n";
+import { getTranslations, type Locale, loadCMSTranslations, localizedPath } from "../lib/i18n";
 
 interface Props {
     locale: Locale;
@@ -8,6 +8,8 @@ interface Props {
 
 const { locale, currentPath } = Astro.props;
 const t = getTranslations(locale);
+const cmsT = await loadCMSTranslations();
+const attrTranslations = cmsT[locale] || {};
 
 const navItems = [
     { href: "/", key: "nav.home" },
@@ -63,7 +65,7 @@ const langs = ["en", "ne", "newa"] as const;
           </svg>
           <span id="cart-badge" class="absolute -top-1.5 -right-2 hidden bg-sale text-white text-[0.6rem] font-bold min-w-4 h-4 rounded-full items-center justify-center px-1 leading-none" aria-label="items in cart">0</span>
         </a>
-        <div id="cart-dropdown" data-ui-text={JSON.stringify({ empty: t("cart.empty"), subtotal: t("cart.subtotal"), checkout: t("cart.checkout"), noImg: t("cart.noImg") })} class="hidden fixed md:absolute top-full right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-surface-2 border border-border rounded-xl shadow-xl z-200 overflow-hidden">
+        <div id="cart-dropdown" data-ui-text={JSON.stringify({ empty: t("cart.empty"), subtotal: t("cart.subtotal"), checkout: t("cart.checkout"), noImg: t("cart.noImg"), attrTranslations: attrTranslations })} class="hidden fixed md:absolute top-full right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-surface-2 border border-border rounded-xl shadow-xl z-200 overflow-hidden">
           <div class="p-4">
             <div id="cart-dropdown-items"></div>
             <div id="cart-empty" class="text-center py-4 text-text-3 text-sm"></div>
@@ -130,7 +132,7 @@ const langs = ["en", "ne", "newa"] as const;
 </div>
 
 <script is:inline define:vars={{ langLabels: JSON.stringify(langLabels) }}>
-  function getLocale() { var m = window.location.pathname.match(/^\/(ne|newa)\//); return m ? m[1] : document.documentElement.dataset.locale || "en"; }
+  function getLocale() { var m = window.location.pathname.match(/^\/(ne|newa)\//); return m ? m[1] : "en"; }
   var CART_KEY = "metalhub-cart";
   var uiText = JSON.parse(document.getElementById("cart-dropdown")?.getAttribute("data-ui-text") || "{}");
 
@@ -180,7 +182,8 @@ const langs = ["en", "ne", "newa"] as const;
     var subtotal = 0;
     itemsEl.innerHTML = cart.map(function(item, i) {
       subtotal += item.unitPrice * item.qty;
-      var opts = Object.entries(item.selectedOptions || {}).map(function(e) { return e[0] + ": " + e[1]; }).join(", ");
+      var itemName = (item.nameAll && item.nameAll[getLocale()]) || item.name;
+      var opts = Object.entries(item.selectedOptions || {}).map(function(e) { return translateLabel(e[0]) + ": " + translateLabel(e[1]); }).join(", ");
       var params = new URLSearchParams();
       Object.entries(item.selectedOptions || {}).forEach(function(e) { params.set(e[0], e[1]); });
       var queryStr = params.toString() ? "?" + params.toString() : "";
@@ -193,15 +196,15 @@ const langs = ["en", "ne", "newa"] as const;
       return '<div class="flex items-center gap-3 py-2 border-b border-border last:border-0">' +
         imgHtml +
         '<div class="flex-1 min-w-0">' +
-          '<a href="' + productHref + '" class="text-sm font-semibold truncate text-text-1 no-underline hover:text-accent transition-colors block">' + item.name + '</a>' +
+          '<a href="' + productHref + '" class="text-sm font-semibold truncate text-text-1 no-underline hover:text-accent transition-colors block">' + itemName + '</a>' +
           (opts ? '<p class="text-xs text-text-3 truncate">' + opts + '</p>' : '') +
           '<p class="text-xs text-text-2">NPR ' + item.unitPrice.toLocaleString() + ' \u00d7 ' + item.qty + '</p>' +
         '</div>' +
         '<div class="flex items-center gap-1">' +
-          '<button onclick="window.__cartUpdateQty(' + i + ',' + (item.qty - 1) + ')" class="w-6 h-6 flex items-center justify-center border border-border rounded text-xs cursor-pointer hover:border-accent hover:text-accent transition-colors">\u2212</button>' +
+          '<button onclick="event.stopPropagation();window.__cartUpdateQty(' + i + ',' + (item.qty - 1) + ')" class="w-6 h-6 flex items-center justify-center border border-border rounded text-xs cursor-pointer hover:border-accent hover:text-accent transition-colors">\u2212</button>' +
           '<span class="w-6 text-center text-sm font-bold">' + item.qty + '</span>' +
-          '<button onclick="window.__cartUpdateQty(' + i + ',' + (item.qty + 1) + ')" class="w-6 h-6 flex items-center justify-center border border-border rounded text-xs cursor-pointer hover:border-accent hover:text-accent transition-colors">+</button>' +
-          '<button onclick="window.__cartRemoveItem(' + i + ')" class="w-6 h-6 flex items-center justify-center border border-sale rounded text-xs text-sale cursor-pointer hover:bg-sale hover:text-white transition-colors ml-1">\u00d7</button>' +
+          '<button onclick="event.stopPropagation();window.__cartUpdateQty(' + i + ',' + (item.qty + 1) + ')" class="w-6 h-6 flex items-center justify-center border border-border rounded text-xs cursor-pointer hover:border-accent hover:text-accent transition-colors">+</button>' +
+          '<button onclick="event.stopPropagation();window.__cartRemoveItem(' + i + ')" class="w-6 h-6 flex items-center justify-center border border-sale rounded text-xs text-sale cursor-pointer hover:bg-sale hover:text-white transition-colors ml-1">\u00d7</button>' +
         '</div>' +
       '</div>';
     }).join("");
@@ -225,7 +228,15 @@ const langs = ["en", "ne", "newa"] as const;
     }
   };
 
-  window.__cartRemoveItem = function(index) {
+  function translateLabel(key) {
+    var t = uiText.attrTranslations;
+    if (t) { var k = key.toLowerCase(); return t[k] || key; }
+    return key;
+  }
+
+  function getLocale() { var m = window.location.pathname.match(/^\/(ne|newa)\//); return m ? m[1] : "en"; }
+
+    window.__cartRemoveItem = function(index) {
     var cart = getCart();
     cart.splice(index, 1);
     saveCart(cart);
@@ -233,13 +244,12 @@ const langs = ["en", "ne", "newa"] as const;
     updateCartBadge();
   };
 
-  function positionCartDropdown(dropdown, wrapper) {
+  function positionCartDropdown(dropdown) {
     var isMobile = window.innerWidth < 768;
     if (isMobile) {
-      var rect = wrapper.getBoundingClientRect();
       dropdown.style.position = "fixed";
-      dropdown.style.top = (rect.bottom + 8) + "px";
-      dropdown.style.right = (window.innerWidth - rect.right) + "px";
+      dropdown.style.top = "4rem";
+      dropdown.style.right = "0px";
       dropdown.style.left = "auto";
       dropdown.style.transform = "none";
     } else {
@@ -270,6 +280,7 @@ const langs = ["en", "ne", "newa"] as const;
     window.__headerCtx.abort = new AbortController();
     var signal = window.__headerCtx.abort.signal;
 
+    uiText = JSON.parse(document.getElementById("cart-dropdown")?.getAttribute("data-ui-text") || "{}");
     updateCartBadge();
     renderCartDropdown();
 
@@ -283,7 +294,7 @@ const langs = ["en", "ne", "newa"] as const;
         var isHidden = dropdown.classList.contains("hidden");
         dropdown.classList.toggle("hidden");
         if (isHidden) {
-          positionCartDropdown(dropdown, wrapper);
+          positionCartDropdown(dropdown);
           renderCartDropdown();
         }
       }, { signal: signal });

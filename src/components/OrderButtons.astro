@@ -1,6 +1,6 @@
 ---
 import type { Locale } from "../lib/i18n";
-import { getTranslations } from "../lib/i18n";
+import { getTranslations, loadCMSTranslations } from "../lib/i18n";
 
 interface Props {
     locale: Locale;
@@ -9,9 +9,11 @@ interface Props {
 }
 const { locale, whatsappNumber, messengerPage } = Astro.props;
 const t = getTranslations(locale);
+const cmsT = await loadCMSTranslations();
+const attrTranslations = cmsT[locale] || {};
 ---
 
-<div id="order-error" data-ui-text={JSON.stringify({ nameRequired: t("checkout.nameRequired"), phoneRequired: t("checkout.phoneRequired"), phoneInvalid: t("checkout.phoneInvalid"), locationRequired: t("checkout.locationRequired"), cartEmpty: t("checkout.cartEmpty") })} class="hidden bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-4"></div>
+<div id="order-error" data-ui-text={JSON.stringify({ nameRequired: t("checkout.nameRequired"), phoneRequired: t("checkout.phoneRequired"), phoneInvalid: t("checkout.phoneInvalid"), locationRequired: t("checkout.locationRequired"), cartEmpty: t("checkout.cartEmpty"), attrTranslations: attrTranslations })} class="hidden bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-4"></div>
 
 <div class="flex flex-col gap-3 mt-6">
   <button id="btn-whatsapp" disabled class="bg-whatsapp text-white border-none rounded-xl py-3.5 px-5 text-base font-semibold cursor-not-allowed transition-[colors,transform] opacity-50 hover:bg-[#1eac5a] hover:-translate-y-px hover:shadow-[0_4px_12px_rgb(37_211_102/0.3)]">
@@ -23,9 +25,15 @@ const t = getTranslations(locale);
 </div>
 
 <script is:inline define:vars={{ whatsappNumber, messengerPage }}>
-  function getLocale() { var m = window.location.pathname.match(/^\/(ne|newa)\//); return m ? m[1] : document.documentElement.dataset.locale || "en"; }
+  function getLocale() { var m = window.location.pathname.match(/^\/(ne|newa)\//); return m ? m[1] : "en"; }
   var CART_KEY = "metalhub-cart";
   var uiText = JSON.parse(document.getElementById("order-error")?.getAttribute("data-ui-text") || "{}");
+
+  function translateLabel(key) {
+    var t = uiText.attrTranslations;
+    if (t) { var k = key.toLowerCase(); return t[k] || key; }
+    return key;
+  }
 
   function getCart() {
     try { return JSON.parse(localStorage.getItem(CART_KEY) || "[]"); } catch { return []; }
@@ -95,11 +103,12 @@ const t = getTranslations(locale);
     msg += "Items:\n";
 
     cart.forEach(function(item, i) {
-      var opts = Object.entries(item.selectedOptions || {}).map(function(e) { return e[0] + ": " + e[1]; }).join(", ");
+      var itemName = (item.nameAll && item.nameAll[getLocale()]) || item.name;
+      var opts = Object.entries(item.selectedOptions || {}).map(function(e) { return translateLabel(e[0]) + ": " + translateLabel(e[1]); }).join(", ");
       var price = item.hasDiscount
         ? "NPR " + item.unitPrice.toLocaleString() + " (was NPR " + item.originalUnitPrice.toLocaleString() + ")"
         : "NPR " + item.unitPrice.toLocaleString();
-      msg += (i + 1) + ". " + item.name + (opts ? " (" + opts + ")" : "") + " x" + item.qty + " \u2014 " + price + "\n";
+      msg += (i + 1) + ". " + itemName + (opts ? " (" + opts + ")" : "") + " x" + item.qty + " \u2014 " + price + "\n";
 
       var params = new URLSearchParams();
       Object.entries(item.selectedOptions || {}).forEach(function(e) { params.set(e[0], e[1]); });
@@ -150,6 +159,7 @@ const t = getTranslations(locale);
     window.__orderCtx.abort = new AbortController();
     var signal = window.__orderCtx.abort.signal;
 
+    uiText = JSON.parse(document.getElementById("order-error")?.getAttribute("data-ui-text") || "{}");
     var whatsappBtn = document.getElementById("btn-whatsapp");
     var messengerBtn = document.getElementById("btn-messenger");
     if (whatsappBtn) whatsappBtn.onclick = openWhatsApp;
