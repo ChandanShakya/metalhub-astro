@@ -2,7 +2,7 @@ backend:
   name: github
   repo: ChandanShakya/metalhub-astro
   branch: main
-  base_url: https://sveltia-cms-auth.<you>.workers.dev
+  base_url: https://sveltia-cms-auth.metalhub-np.workers.dev/
 
 media_folder: "public/images/products"
 public_folder: "/images/products"
@@ -21,8 +21,20 @@ collections:
     fields:
       - { label: Name, name: name, widget: string, i18n: true }
       - { label: Slug, name: slug, widget: string }
-      - { label: Icon, name: icon, widget: string, default: "📦", hint: "An emoji to represent this category" }
-      - { label: Order, name: order, widget: number, default: 0, hint: "Lower numbers appear first" }
+      - {
+          label: Icon,
+          name: icon,
+          widget: string,
+          default: "📦",
+          hint: "An emoji to represent this category",
+        }
+      - {
+          label: Order,
+          name: order,
+          widget: number,
+          default: 0,
+          hint: "Lower numbers appear first",
+        }
 
   - name: products
     label: Products
@@ -33,8 +45,18 @@ collections:
       - { label: Name, name: name, widget: string, i18n: true }
       - { label: Slug, name: slug, widget: string }
       - { label: Description, name: description, widget: markdown, i18n: true }
-      - { label: Category, name: category, widget: string, hint: "Must match a category slug exactly (e.g. copper, brass)" }
-      - { label: Images, name: images, widget: list, field: { name: image, widget: image } }
+      - {
+          label: Category,
+          name: category,
+          widget: string,
+          hint: "Must match a category slug exactly (e.g. copper, brass)",
+        }
+      - {
+          label: Images,
+          name: images,
+          widget: list,
+          field: { name: image, widget: image },
+        }
       - { label: Base Price (NPR), name: basePrice, widget: number }
       - { label: In Stock, name: inStock, widget: boolean, default: true }
       - { label: Featured, name: featured, widget: boolean, default: false }
@@ -43,7 +65,13 @@ collections:
         widget: object
         fields:
           - { label: Active, name: active, widget: boolean, default: false }
-          - { label: Type, name: type, widget: select, options: [percentage, flat], default: percentage }
+          - {
+              label: Type,
+              name: type,
+              widget: select,
+              options: [percentage, flat],
+              default: percentage,
+            }
           - { label: Value, name: value, widget: number, default: 0 }
       - label: Attributes
         name: attributes
@@ -54,7 +82,12 @@ collections:
             widget: object
             i18n: true
             fields:
-              - { label: English, name: en, widget: string, hint: "e.g. Size, Finish" }
+              - {
+                  label: English,
+                  name: en,
+                  widget: string,
+                  hint: "e.g. Size, Finish",
+                }
               - { label: Nepali, name: ne, widget: string }
               - { label: Newari, name: newa, widget: string }
           - label: Options
@@ -69,7 +102,12 @@ collections:
                   - { label: English, name: en, widget: string }
                   - { label: Nepali, name: ne, widget: string }
                   - { label: Newari, name: newa, widget: string }
-              - { label: Price Modifier, name: priceModifier, widget: number, default: 0 }
+              - {
+                  label: Price Modifier,
+                  name: priceModifier,
+                  widget: number,
+                  default: 0,
+                }
               - label: Images (optional, shows when this option is selected)
                 name: images
                 widget: list
@@ -80,16 +118,37 @@ collections:
                 widget: object
                 required: false
                 fields:
-                  - { label: Active, name: active, widget: boolean, default: false }
-                  - { label: Type, name: type, widget: select, options: [percentage, flat], default: percentage }
+                  - {
+                      label: Active,
+                      name: active,
+                      widget: boolean,
+                      default: false,
+                    }
+                  - {
+                      label: Type,
+                      name: type,
+                      widget: select,
+                      options: [percentage, flat],
+                      default: percentage,
+                    }
                   - { label: Value, name: value, widget: number, default: 0 }
       - label: Social Media Embeds
         name: socialEmbeds
         widget: list
         required: false
         fields:
-          - { label: Platform, name: platform, widget: select, options: [facebook, instagram, tiktok] }
-          - { label: Embed Code, name: embedCode, widget: text, hint: "Paste the official embed snippet from the post's Share option" }
+          - {
+              label: Platform,
+              name: platform,
+              widget: select,
+              options: [facebook, instagram, tiktok],
+            }
+          - {
+              label: Embed Code,
+              name: embedCode,
+              widget: text,
+              hint: "Paste the official embed snippet from the post's Share option",
+            }
 
   - name: i18n
     label: Translations
@@ -97,7 +156,12 @@ collections:
     create: true
     i18n: false
     fields:
-      - { label: Key, name: key, widget: string, hint: "e.g. hero.title, products.addToCart" }
+      - {
+          label: Key,
+          name: key,
+          widget: string,
+          hint: "e.g. hero.title, products.addToCart",
+        }
       - { label: English, name: en, widget: string }
       - { label: Nepali, name: ne, widget: string }
       - { label: Newari, name: newa, widget: string }
@@ -108,5 +172,16 @@ collections:
     create: false
     i18n: false
     fields:
-      - { label: WhatsApp Number (with country code, no + or spaces), name: whatsappNumber, widget: string, hint: "e.g. 9779861760709" }
-      - { label: Facebook Page Username (for Messenger), name: messengerPage, widget: string, hint: "The username from your Facebook page URL, e.g. metalhub.np" }
+      - {
+          label: WhatsApp Number (with country code,
+          no + or spaces),
+          name: whatsappNumber,
+          widget: string,
+          hint: "e.g. 9779861760709",
+        }
+      - {
+          label: Facebook Page Username (for Messenger),
+          name: messengerPage,
+          widget: string,
+          hint: "The username from your Facebook page URL, e.g. metalhub.np",
+        }
