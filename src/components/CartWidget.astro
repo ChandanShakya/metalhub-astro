@@ -22,7 +22,7 @@ const attrTranslations = cmsT[locale] || {};
 })}>
   <div class="mx-auto max-w-site px-4 py-8">
     <h2 id="cart-title" class="text-2xl font-bold mb-5"></h2>
-    <div id="cart-items"></div>
+    <div id="cart-items" aria-live="polite"></div>
     <div id="cart-subtotal"></div>
     <div id="cart-empty" class="text-center py-12 text-text-3 hidden">{t("cart.empty")}</div>
   </div>
@@ -86,10 +86,10 @@ const attrTranslations = cmsT[locale] || {};
           '<p class="text-sm text-text-2 mt-1">NPR ' + item.unitPrice.toLocaleString() + ' \u00d7 ' + item.qty + ' = <span class="font-semibold text-accent-dark">NPR ' + (item.unitPrice * item.qty).toLocaleString() + '</span></p>' +
         '</div>' +
         '<div class="flex items-center gap-1.5 shrink-0">' +
-          '<button onclick="window.__cartUpdateQty(' + i + ', ' + (item.qty - 1) + ')" class="w-7 h-7 flex items-center justify-center border border-border rounded-md bg-surface-2 cursor-pointer transition-colors hover:border-accent hover:text-accent text-sm">\u2212</button>' +
+          '<button aria-label="Decrease quantity" onclick="window.__cartUpdateQty(' + i + ', ' + (item.qty - 1) + ')" class="w-7 h-7 flex items-center justify-center border border-border rounded-md bg-surface-2 cursor-pointer transition-colors hover:border-accent hover:text-accent text-sm">\u2212</button>' +
           '<span class="w-7 text-center text-sm font-bold">' + item.qty + '</span>' +
-          '<button onclick="window.__cartUpdateQty(' + i + ', ' + (item.qty + 1) + ')" class="w-7 h-7 flex items-center justify-center border border-border rounded-md bg-surface-2 cursor-pointer transition-colors hover:border-accent hover:text-accent text-sm">+</button>' +
-          '<button class="w-7 h-7 flex items-center justify-center border border-sale rounded-md bg-surface-2 text-sale cursor-pointer transition-colors hover:bg-sale hover:text-white text-sm ml-1" onclick="window.__cartRemoveItem(' + i + ')">\u00d7</button>' +
+          '<button aria-label="Increase quantity" onclick="window.__cartUpdateQty(' + i + ', ' + (item.qty + 1) + ')" class="w-7 h-7 flex items-center justify-center border border-border rounded-md bg-surface-2 cursor-pointer transition-colors hover:border-accent hover:text-accent text-sm">+</button>' +
+          '<button aria-label="Remove item" class="w-7 h-7 flex items-center justify-center border border-sale rounded-md bg-surface-2 text-sale cursor-pointer transition-colors hover:bg-sale hover:text-white text-sm ml-1" onclick="window.__cartRemoveItem(' + i + ')">\u00d7</button>' +
         '</div>' +
       '</div>';
     }).join("") + '</div>';

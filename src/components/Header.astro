@@ -191,7 +191,7 @@ const langs = ["en", "ne", "newa"] as const;
       var productHref = (loc === "en" ? "/products/" : "/" + loc + "/products/") + item.slug + "/" + queryStr;
       var imgSrc = (item.images && item.images.length > 0 ? item.images[0] : "") || item.image || "";
       var imgHtml = imgSrc
-        ? '<img src="' + imgSrc + '" alt="' + item.name + '" class="w-10 h-10 object-cover rounded-lg shrink-0" loading="lazy" decoding="async" />'
+        ? '<img src="' + imgSrc + '" alt="' + itemName + '" class="w-10 h-10 object-cover rounded-lg shrink-0" loading="lazy" decoding="async" />'
         : '<div class="w-10 h-10 rounded-lg bg-gradient-to-br from-surface-3 to-border shrink-0 flex items-center justify-center text-text-3 text-xs">' + uiText.noImg + '</div>';
       return '<div class="flex items-center gap-3 py-2 border-b border-border last:border-0">' +
         imgHtml +
@@ -201,10 +201,10 @@ const langs = ["en", "ne", "newa"] as const;
           '<p class="text-xs text-text-2">NPR ' + item.unitPrice.toLocaleString() + ' \u00d7 ' + item.qty + '</p>' +
         '</div>' +
         '<div class="flex items-center gap-1">' +
-          '<button onclick="event.stopPropagation();window.__cartUpdateQty(' + i + ',' + (item.qty - 1) + ')" class="w-6 h-6 flex items-center justify-center border border-border rounded text-xs cursor-pointer hover:border-accent hover:text-accent transition-colors">\u2212</button>' +
+          '<button aria-label="Decrease quantity" onclick="event.stopPropagation();window.__cartUpdateQty(' + i + ',' + (item.qty - 1) + ')" class="w-6 h-6 flex items-center justify-center border border-border rounded text-xs cursor-pointer hover:border-accent hover:text-accent transition-colors">\u2212</button>' +
           '<span class="w-6 text-center text-sm font-bold">' + item.qty + '</span>' +
-          '<button onclick="event.stopPropagation();window.__cartUpdateQty(' + i + ',' + (item.qty + 1) + ')" class="w-6 h-6 flex items-center justify-center border border-border rounded text-xs cursor-pointer hover:border-accent hover:text-accent transition-colors">+</button>' +
-          '<button onclick="event.stopPropagation();window.__cartRemoveItem(' + i + ')" class="w-6 h-6 flex items-center justify-center border border-sale rounded text-xs text-sale cursor-pointer hover:bg-sale hover:text-white transition-colors ml-1">\u00d7</button>' +
+          '<button aria-label="Increase quantity" onclick="event.stopPropagation();window.__cartUpdateQty(' + i + ',' + (item.qty + 1) + ')" class="w-6 h-6 flex items-center justify-center border border-border rounded text-xs cursor-pointer hover:border-accent hover:text-accent transition-colors">+</button>' +
+          '<button aria-label="Remove item" onclick="event.stopPropagation();window.__cartRemoveItem(' + i + ')" class="w-6 h-6 flex items-center justify-center border border-sale rounded text-xs text-sale cursor-pointer hover:bg-sale hover:text-white transition-colors ml-1">\u00d7</button>' +
         '</div>' +
       '</div>';
     }).join("");
@@ -319,6 +319,7 @@ const langs = ["en", "ne", "newa"] as const;
         drawer.classList.add("translate-x-0");
       });
       menuBtn.setAttribute("aria-expanded", "true");
+      menuBtn.setAttribute("aria-label", "Close menu");
       document.body.style.overflow = "hidden";
     }
 
@@ -327,6 +328,7 @@ const langs = ["en", "ne", "newa"] as const;
       drawer.classList.add("translate-x-full");
       backdrop.classList.add("hidden");
       menuBtn.setAttribute("aria-expanded", "false");
+      menuBtn.setAttribute("aria-label", "Open menu");
       document.body.style.overflow = "";
       setTimeout(function() { drawer.classList.add("hidden"); }, 200);
     }

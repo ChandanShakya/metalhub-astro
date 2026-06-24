@@ -33,8 +33,8 @@ function localize(obj: LocalizedString): string {
 
 <div id="product-attributes">
   {attributes.map((attr) => (
-    <div class="mb-4">
-      <label class="block font-semibold text-sm mb-2 text-text-1">{localize(attr.name)}</label>
+    <fieldset class="mb-4 border-none p-0 m-0">
+      <legend class="block font-semibold text-sm mb-2 text-text-1 p-0">{localize(attr.name)}</legend>
       <div class="flex gap-2 flex-wrap" data-attribute-name={localize(attr.name)} data-key={attr.name.en}>
         {attr.options.map((opt: AttributeOption) => (
           <button
@@ -53,18 +53,18 @@ function localize(obj: LocalizedString): string {
           </button>
         ))}
       </div>
-    </div>
+    </fieldset>
   ))}
 </div>
 
 <div id="price-display" class="text-2xl font-extrabold my-4 text-text-1"></div>
 
 <div class="flex items-center gap-3 mb-2">
-  <label class="text-sm font-medium text-text-2">{t("products.qty")}</label>
+  <label for="qty-input" class="text-sm font-medium text-text-2">{t("products.qty")}</label>
   <div class="flex items-center border-2 border-border rounded-lg overflow-hidden">
-    <button id="qty-minus" class="w-9 h-9 flex items-center justify-center bg-surface-2 cursor-pointer transition-colors hover:bg-surface-3 text-text-1 font-bold border-none">-</button>
+    <button id="qty-minus" aria-label="Decrease quantity" class="w-9 h-9 flex items-center justify-center bg-surface-2 cursor-pointer transition-colors hover:bg-surface-3 text-text-1 font-bold border-none">-</button>
     <input id="qty-input" type="number" min="1" max="99" value="1" class="w-12 h-9 text-center border-none bg-surface-2 text-text-1 font-semibold text-base [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-    <button id="qty-plus" class="w-9 h-9 flex items-center justify-center bg-surface-2 cursor-pointer transition-colors hover:bg-surface-3 text-text-1 font-bold border-none">+</button>
+    <button id="qty-plus" aria-label="Increase quantity" class="w-9 h-9 flex items-center justify-center bg-surface-2 cursor-pointer transition-colors hover:bg-surface-3 text-text-1 font-bold border-none">+</button>
   </div>
 </div>
 

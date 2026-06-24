@@ -25,13 +25,28 @@ const productName = product.data.name[locale as keyof typeof product.data.name] 
 const description =
     product.data.description[locale as keyof typeof product.data.description] || product.data.description.en;
 const productImages = product.data.images.length > 0 ? product.data.images : ["/images/products/placeholder.jpg"];
+
+const schemaJson = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: productName,
+    description: description,
+    image: productImages,
+    offers: {
+        "@type": "Offer",
+        price: product.data.basePrice,
+        priceCurrency: "NPR",
+        availability: product.data.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+    },
+});
 ---
 
-<BaseLayout title={productName} locale={locale} description={description}>
+<BaseLayout title={productName} locale={locale} description={description} image={productImages[0]}>
+  <script is:inline type="application/ld+json" set:html={schemaJson} />
   <section class="py-8 container mx-auto px-4">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-12">
       <div>
-        <div id="main-image-wrapper" class="relative rounded-xl overflow-hidden bg-linear-to-br from-surface-3 to-border cursor-zoom-in" data-product-images={JSON.stringify(productImages)} onclick="document.getElementById('lightbox').classList.remove('hidden')">
+        <div id="main-image-wrapper" class="relative rounded-xl overflow-hidden bg-linear-to-br from-surface-3 to-border cursor-zoom-in" data-product-images={JSON.stringify(productImages)}>
           <Image id="main-image" src={productImages[0]} alt={productName} class="w-full aspect-square object-cover transition-transform duration-500 hover:scale-[1.02]" width={800} height={800} />
         </div>
 
@@ -88,8 +103,8 @@ const productImages = product.data.images.length > 0 ? product.data.images : ["/
     </section>
   )}
 
-  <div id="lightbox" class="hidden fixed inset-0 z-1000 bg-black/90 flex items-center justify-center p-4">
-    <button class="absolute top-4 right-4 text-white text-3xl font-bold cursor-pointer hover:text-accent transition-colors z-10" onclick="document.getElementById('lightbox').classList.add('hidden')" aria-label="Close">&times;</button>
+  <div id="lightbox" class="hidden fixed inset-0 z-1000 bg-black/90 flex items-center justify-center p-4" tabindex="-1">
+    <button id="lightbox-close" class="absolute top-4 right-4 text-white text-3xl font-bold cursor-pointer hover:text-accent transition-colors z-10" aria-label="Close">&times;</button>
     <button id="lightbox-prev" class="absolute left-4 top-1/2 -translate-y-1/2 text-white text-4xl cursor-pointer hover:text-accent transition-colors z-10" aria-label="Previous">&#8249;</button>
     <img id="lightbox-img" src="" alt={productName} class="max-w-full max-h-full object-contain rounded-lg" />
     <button id="lightbox-next" class="absolute right-4 top-1/2 -translate-y-1/2 text-white text-4xl cursor-pointer hover:text-accent transition-colors z-10" aria-label="Next">&#8250;</button>
@@ -193,11 +208,44 @@ const productImages = product.data.images.length > 0 ? product.data.images : ["/
       if (lbPrev) lbPrev.addEventListener("click", function(e) { e.stopPropagation(); showImage(currentIndex - 1); }, { signal: signal });
       if (lbNext) lbNext.addEventListener("click", function(e) { e.stopPropagation(); showImage(currentIndex + 1); }, { signal: signal });
 
+      var lastFocused = null;
+
+      function openLightbox() {
+        if (!lightbox) return;
+        lastFocused = document.activeElement;
+        lightbox.classList.remove("hidden");
+        var closeBtn = document.getElementById("lightbox-close");
+        if (closeBtn) closeBtn.focus();
+      }
+
+      function closeLightbox() {
+        if (!lightbox) return;
+        lightbox.classList.add("hidden");
+        if (lastFocused) lastFocused.focus();
+      }
+
       document.addEventListener("keydown", function(e) {
         if (lightbox && !lightbox.classList.contains("hidden")) {
           if (e.key === "ArrowLeft") showImage(currentIndex - 1);
           if (e.key === "ArrowRight") showImage(currentIndex + 1);
-          if (e.key === "Escape") lightbox.classList.add("hidden");
+          if (e.key === "Escape") closeLightbox();
+          if (e.key === "Tab") {
+            var focusable = lightbox.querySelectorAll('button, [tabindex]:not([tabindex="-1"])');
+            if (focusable.length === 0) return;
+            var first = focusable[0];
+            var last = focusable[focusable.length - 1];
+            if (e.shiftKey) {
+              if (document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+              }
+            } else {
+              if (document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+              }
+            }
+          }
         }
       }, { signal: signal });
 
@@ -215,9 +263,22 @@ const productImages = product.data.images.length > 0 ? product.data.images : ["/
       if (currentImages.length > 0) setMainImage(currentImages[0]);
       updateCounter();
 
+      var mainImageWrapper = document.getElementById("main-image-wrapper");
+      if (mainImageWrapper) {
+        mainImageWrapper.addEventListener("click", openLightbox, { signal: signal });
+      }
+
+      var lightboxClose = document.getElementById("lightbox-close");
+      if (lightboxClose) {
+        lightboxClose.addEventListener("click", closeLightbox, { signal: signal });
+        lightboxClose.addEventListener("keydown", function(e) {
+          if (e.key === "Enter" || e.key === " ") closeLightbox();
+        }, { signal: signal });
+      }
+
       if (lightbox) {
         lightbox.addEventListener("click", function(e) {
-          if (e.target === lightbox) lightbox.classList.add("hidden");
+          if (e.target === lightbox) closeLightbox();
         }, { signal: signal });
       }
 

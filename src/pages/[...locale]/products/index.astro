@@ -32,9 +32,9 @@ const totalPages = Math.ceil(products.length / PER_PAGE);
       <>
         {sortedCategories.length > 0 && (
           <div class="flex gap-2 flex-wrap mb-6">
-            <button class="filter-btn active bg-surface-2 border border-border rounded-full px-3.5 py-1.5 cursor-pointer text-sm font-medium transition-[colors,transform] text-text-2 hover:border-accent hover:text-accent" data-category="all">{t("products.all")}</button>
+            <button class="filter-btn active bg-surface-2 border border-border rounded-full px-3.5 py-1.5 cursor-pointer text-sm font-medium transition-[colors,transform] text-text-2 hover:border-accent hover:text-accent" data-category="all" aria-pressed="true">{t("products.all")}</button>
             {sortedCategories.map((cat) => (
-              <button class="filter-btn bg-surface-2 border border-border rounded-full px-3.5 py-1.5 cursor-pointer text-sm font-medium transition-[colors,transform] text-text-2 hover:border-accent hover:text-accent" data-category={cat.data.slug}>
+              <button class="filter-btn bg-surface-2 border border-border rounded-full px-3.5 py-1.5 cursor-pointer text-sm font-medium transition-[colors,transform] text-text-2 hover:border-accent hover:text-accent" data-category={cat.data.slug} aria-pressed="false">
                 {cat.data.icon} {cat.data.name[locale as keyof typeof cat.data.name] || cat.data.name.en}
               </button>
             ))}
@@ -69,7 +69,7 @@ const totalPages = Math.ceil(products.length / PER_PAGE);
             <button id="load-more-btn" data-ui-text={JSON.stringify({ loadMore: t("products.loadMore"), showing: t("products.showing") })} class="bg-surface-2 border border-border rounded-xl px-6 py-3 text-sm font-semibold cursor-pointer transition-[colors,transform] text-text-2 hover:border-accent hover:text-accent hover:bg-surface-3">
               {t("products.loadMore")}
             </button>
-            <p id="load-more-info" class="text-xs text-text-3 mt-2"></p>
+            <p id="load-more-info" aria-live="polite" class="text-xs text-text-3 mt-2"></p>
           </div>
         )}
       </>
@@ -94,9 +94,11 @@ const totalPages = Math.ceil(products.length / PER_PAGE);
           document.querySelectorAll(".filter-btn").forEach(b => {
             b.classList.remove("active", "bg-accent", "text-white", "border-accent");
             b.classList.add("bg-surface-2", "text-text-2", "border-border");
+            b.setAttribute("aria-pressed", "false");
           });
           this.classList.add("active", "bg-accent", "text-white", "border-accent");
           this.classList.remove("bg-surface-2", "text-text-2", "border-border");
+          this.setAttribute("aria-pressed", "true");
 
           var cat = this.dataset.category;
           var visibleCount = 0;
@@ -114,6 +116,12 @@ const totalPages = Math.ceil(products.length / PER_PAGE);
               el.classList.add("hidden");
             }
           });
+
+          var catParam = cat === "all" ? null : cat;
+          var params = new URLSearchParams(window.location.search);
+          if (catParam) params.set("category", catParam); else params.delete("category");
+          var newUrl = window.location.pathname + (params.toString() ? "?" + params.toString() : "");
+          history.replaceState(null, "", newUrl);
 
           var loadMoreBtn = document.getElementById("load-more-btn");
           var loadMoreInfo = document.getElementById("load-more-info");

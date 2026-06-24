@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 @theme {
-    --color-accent: #b45309;
-    --color-accent-light: #d97706;
-    --color-accent-dark: #92400e;
+    --color-accent: #92400e;
+    --color-accent-light: #b45309;
+    --color-accent-dark: #78350f;
     --color-accent-surface: #fffbeb;
     --color-sale: #dc2626;
     --color-success: #16a34a;
@@ -14,7 +14,7 @@
     --color-surface-3: #f1f5f9;
     --color-text-1: #0f172a;
     --color-text-2: #475569;
-    --color-text-3: #64748b;
+    --color-text-3: #475569;
     --color-border: #e2e8f0;
     --max-w-site: 1200px;
     --perspective-card: 800px;
