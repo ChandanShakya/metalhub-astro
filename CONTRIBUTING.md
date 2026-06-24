@@ -19,10 +19,13 @@ bun run lint:fix
 # 5. Verify the build succeeds
 bun run build
 
-# 6. Preview the production build
+# 6. Type check
+bun run astro check
+
+# 7. Preview the production build
 bun run preview
 
-# 7. Commit and push (triggers Cloudflare Pages rebuild)
+# 8. Commit and push (triggers Cloudflare Pages rebuild)
 git add <files>
 git commit -m "Description of change"
 git push
@@ -36,32 +39,31 @@ Formatting and linting run automatically on commit via pre-commit hooks (husky +
 
 - All components are **`.astro` files** in `src/components/`
 - No React, Vue, Svelte, or other frameworks — pure Astro components
-- Interactive behavior uses `<script>` tags in the component (vanilla JS)
+- Interactive behavior uses `<script is:inline>` tags with `AbortController` for SPA safety
 - Components receive data via props; no global state beyond `localStorage`
+- **Tailwind CSS** for all styling — no manual CSS files, no `@apply` component classes
 
 ### Pages
 
-- Each page exists in **3 locale variants** (EN, NE, Newa)
-- English pages are at the root (e.g., `src/pages/products/index.astro`)
-- Nepali pages are at `/ne/` (e.g., `src/pages/ne/products/index.astro`)
-- Newari pages are at `/newa/` (e.g., `src/pages/newa/products/index.astro`)
-- When adding a new page, create all 3 locale versions
+- Pages use **`[...locale]` dynamic routes** with `getStaticPaths()` for all 3 locales
+- Each page generates 3 static paths: `/` (EN), `/ne/...` (Nepali), `/newa/...` (Newari)
+- The `locale` prop is read from `Astro.params` and passed to components
 
 ### Adding a New Page
 
-1. Create the English version at `src/pages/<page-name>.astro`
-2. Create `src/pages/ne/<page-name>.astro` (Nepali)
-3. Create `src/pages/newa/<page-name>.astro` (Newari)
-4. Use the `BaseLayout` component with the appropriate `locale` prop
-5. Import and use `getTranslations(locale)` for all UI text
-6. Add navigation links in `src/components/Header.astro` for all 3 locales
+1. Create at `src/pages/[...locale]/<page-name>.astro`
+2. Add `getStaticPaths()` generating paths for each locale
+3. Read `locale` from `Astro.props`
+4. Import and use `getTranslations(locale)` for all UI text
+5. Add navigation links in `src/components/Header.astro`
 
 ### Adding a New Component
 
 1. Create `src/components/ComponentName.astro`
 2. Use props for data input (define `interface Props` at the top)
-3. For client-side interactivity, add a `<script>` tag at the bottom
+3. For client-side interactivity, add `<script is:inline>` with `AbortController`
 4. Follow existing naming: PascalCase for component files
+5. Use Tailwind utility classes only — no custom CSS classes
 
 ### Content Collections
 
@@ -70,9 +72,9 @@ Content schemas are defined in `src/content.config.ts`. Four collections exist:
 | Collection | Directory | Purpose |
 |------------|-----------|---------|
 | `categories` | `src/content/categories/` | Product categories |
-| `products` | `src/content/products/` | Product catalog |
-| `socialHighlights` | `src/content/social-highlights/` | Instagram/TikTok embeds |
+| `products` | `src/content/products/` | Product catalog with translatable attributes |
 | `settings` | `src/content/settings/` | Site config (WhatsApp, Messenger) |
+| `i18n` | `src/content/i18n/` | CMS-managed translation overrides |
 
 To add a new collection:
 
@@ -107,14 +109,40 @@ discount:
   type: percentage
   value: 0
 attributes:
-  - name: Size
+  - name:
+      en: Size
+      ne: साइज
+      newa: साइज
     options:
-      - label: Small
+      - label:
+          en: Small
+          ne: सानो
+          newa: सानो
         priceModifier: 0
-      - label: Large
+        discount:
+          active: true
+          type: percentage
+          value: 10
+        images:
+          - /images/products/my-product-small.jpg
+      - label:
+          en: Large
+          ne: ठूलो
+          newa: ठूलो
         priceModifier: 500
+socialEmbeds:
+  - platform: tiktok
+    embedCode: '<blockquote class="tiktok-embed" ...>...</blockquote>'
 ---
 ```
+
+### Attribute Keys (Important)
+
+Attribute names and option labels are stored as `{en, ne, newa}` objects for translation. However, **URL params and cart storage always use English keys** via `data-key` attributes. This ensures shareable links and cross-locale cart consistency.
+
+- URL params: `?Size=Large&Finish=Antique` (always English)
+- Cart `selectedOptions`: `{ "Size": "Large" }` (always English)
+- Order message: includes product links with English-key params
 
 ## i18n
 
@@ -128,23 +156,20 @@ All static UI text (buttons, labels, headings) is in JSON dictionaries:
 
 ### Adding a New Translation Key
 
-1. Add the key to all 3 JSON files:
-   ```json
-   "my.newKey": "English text"
-   ```
+1. Add the key to all 3 JSON files
 2. Use it in components via the translation function:
    ```astro
    ---
-   import { getTranslations } from '../lib/i18n';
+   import { getTranslations } from "../lib/i18n";
    const { locale } = Astro.props;
    const t = getTranslations(locale);
    ---
-   <p>{t('my.newKey')}</p>
+   <p>{t("my.newKey")}</p>
    ```
 
 ### Important: Newari ≠ Nepali
 
-Newari (Nepal Bhasa) and Nepali are different languages. The `newa` field must contain genuine Nepal Bhasa wording, not a copy of the Nepali text. The client or a translator should write the Newari content separately.
+Newari (Nepal Bhasa) and Nepali are different languages. The `newa` field must contain genuine Nepal Bhasa wording, not a copy of the Nepali text.
 
 ### Ranjana Script
 
@@ -152,39 +177,74 @@ Newari content is stored as Devanagari text. The site applies a Ranjana-mapped f
 
 ```css
 [data-locale="newa"] {
-  font-family: "Ranjana Lipi", "Noto Sans Devanagari", var(--font-body);
+    font-family: "Ranjana Lipi", "Noto Sans Devanagari", var(--font-sans);
 }
 ```
 
-No special input method is needed — the client types normal Devanagari in the CMS, and the font handles the visual transformation.
-
 ## Styling
 
-All styles are in `src/styles/global.css` (single file, ~670 lines).
+All styles use **Tailwind CSS v4** utility classes — no manual CSS files.
 
-### Design Tokens
+### Configuration
 
-Custom properties at `:root`:
+Tailwind is configured via CSS-first approach in `src/styles/global.css`:
 
 ```css
---color-primary: #9a5f2a;      /* Bronze */
---color-secondary: #c9a84c;    /* Gold */
---color-sale: #dc2626;         /* Red */
---color-success: #16a34a;      /* Green */
---color-whatsapp: #25d366;     /* WhatsApp brand */
---color-messenger: #0084ff;    /* Messenger brand */
+@import "tailwindcss";
+@theme { /* custom colors, spacing */ }
 ```
 
-### Adding Styles
+The Vite plugin (`@tailwindcss/vite`) handles everything — no `tailwind.config.js` needed.
 
-- Add new component styles to `global.css` following the existing naming convention
-- Use CSS custom properties for colors and spacing
-- Responsive breakpoints: `768px` (tablet) and `480px` (mobile)
-- The layout uses `.container` (max-width 1200px) and CSS Grid/Flexbox
+### Custom Theme Tokens
 
-### View Transitions
+Defined in the `@theme` block in `global.css`:
 
-Astro's `<ClientRouter />` enables SPA-like page transitions. Custom fade animations are defined in `global.css`. If you add new page transitions, ensure the header stays stable during navigation.
+```css
+@theme {
+    --color-accent: #b45309;
+    --color-surface-2: #ffffff;
+    --color-text-1: #0f172a;
+    /* ... */
+}
+```
+
+Use in templates as: `bg-accent`, `text-text-1`, `border-border`, etc.
+
+### Residual CSS
+
+Only raw CSS that can't be Tailwind utilities:
+- View transition animations (`::view-transition-*`)
+- Leaflet map overrides (external lib)
+- `[data-locale="newa"]` font family
+
+## SPA Patterns
+
+### AbortController for Event Listeners
+
+All `<script is:inline>` scripts use `AbortController` to prevent event listener accumulation during SPA navigation:
+
+```js
+var _abort = null;
+function init() {
+    if (_abort) _abort.abort();
+    _abort = new AbortController();
+    var signal = _abort.signal;
+    document.getElementById("btn").addEventListener("click", handler, { signal });
+}
+document.addEventListener("astro:page-load", init);
+```
+
+### Cart Sync
+
+Cart changes dispatch a custom event for same-tab reactivity:
+
+```js
+function saveCart(items) {
+    localStorage.setItem("metalhub-cart", JSON.stringify(items));
+    window.dispatchEvent(new Event("cart-updated"));
+}
+```
 
 ## Discount Logic
 
@@ -195,16 +255,11 @@ The discount precedence logic is in `src/lib/pricing.ts`:
 3. If no option discount exists, fall back to the **product-level** discount
 4. If neither exists, no discount
 
-When modifying pricing or discount logic, update `calculatePrice()` in `pricing.ts`.
-
 ## Cart
 
-The cart uses `localStorage` with key `metalhub-cart`. See `src/lib/cart.ts` for:
+Cart uses `localStorage` with key `metalhub-cart`. Cart logic is implemented inline in each component's `<script is:inline>` block (no shared library — `src/lib/cart.ts` was removed).
 
-- `getCart()` / `saveCart()` — read/write
-- `addToCart()` — adds item or increments quantity for duplicates (matched by slug + selected options)
-- `removeFromCart()` / `updateQuantity()` — modify items
-- `getCartTotal()` — sum of all items
+Cart items store: `slug`, `name`, `images[]`, `selectedOptions` (English keys), `selectedModifiers`, `unitPrice`, `originalUnitPrice`, `hasDiscount`, `qty`.
 
 ## Testing Locally
 
@@ -215,8 +270,9 @@ There is no test framework configured. Verify changes by:
 3. `bun run astro check` — ensure no TypeScript errors
 4. `bun run dev` — check all pages render correctly
 5. Test all 3 locales (EN, NE, Newa)
-6. Test the full flow: browse → add to cart → checkout → WhatsApp/Messenger link
-7. Test CMS at `http://localhost:4321/admin` (requires the auth Worker running locally or in production)
+6. Test the full flow: browse → select attributes → add to cart → checkout → WhatsApp/Messenger link
+7. Test share popup, product gallery, map search, social embeds
+8. Test CMS at `http://localhost:4321/admin` (requires the auth Worker running locally or in production)
 
 ## Linting & Formatting
 
@@ -230,7 +286,7 @@ The project uses [Biome](https://biomejs.dev) for linting and formatting:
 
 ### Configuration
 
-- **biome.json** — formatter (4-space indent, 120 line width), linter (recommended rules), import sorting
+- **biome.json** — formatter (4-space indent, 120 line width), linter (recommended rules), import sorting, Tailwind directive support
 - **.husky/pre-commit** — runs lint-staged on commit
 - **lint-staged** — applies `biome check --write` to staged `.astro`, `.ts`, `.js`, `.json`, `.css` files
 
@@ -239,5 +295,6 @@ The project uses [Biome](https://biomejs.dev) for linting and formatting:
 - 4-space indentation (enforced by Biome)
 - Double quotes in JS/TS and HTML attributes
 - Semicolons always
-- 2-space indentation in CSS (Biome default for CSS)
 - Import sorting handled automatically by Biome
+- `transition-[colors,transform]` instead of `transition-all` (Lighthouse performance)
+- `data-selected` attribute for state tracking (not CSS class matching)

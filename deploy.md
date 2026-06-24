@@ -136,10 +136,6 @@ git commit -m "Add content directories for CMS"
 git push
 ```
 
-You can now add products and categories either:
-- Through the CMS at `/admin` (recommended for the client)
-- By manually creating markdown files in these directories
-
 ### Sample product file
 
 Create `src/content/products/brass-chiba.md`:
@@ -152,7 +148,7 @@ name:
   ne: "ब्रास चिया"
   newa: "पित्तल चिया"
 description:
-  en: "Traditional brass chiba, hand-finished."
+  en: "Traditional brass chiba, hand-finished with care."
   ne: "परम्परागत ब्रास चिया, हातले बनाइएको।"
   newa: "परम्परागत पित्तल चिया, हातले बनाइएको।"
 images:
@@ -166,14 +162,43 @@ discount:
   type: percentage
   value: 0
 attributes:
-  - name: Size
+  - name:
+      en: Size
+      ne: साइज
+      newa: साइज
     options:
-      - label: Small
+      - label:
+          en: Small
+          ne: सानो
+          newa: सानो
         priceModifier: 0
-      - label: Medium
+        discount:
+          active: true
+          type: percentage
+          value: 15
+        images:
+          - /images/products/chiba-small.jpg
+      - label:
+          en: Medium
+          ne: मध्यम
+          newa: मध्यम
         priceModifier: 300
-      - label: Large
+        discount:
+          active: true
+          type: percentage
+          value: 10
+      - label:
+          en: Large
+          ne: ठूलो
+          newa: ठूलो
         priceModifier: 700
+        discount:
+          active: true
+          type: flat
+          value: 200
+socialEmbeds:
+  - platform: tiktok
+    embedCode: '<blockquote class="tiktok-embed" cite="https://www.tiktok.com/@metalhub.np" data-unique-id="metalhub.np" data-embed-from="embed_page" data-embed-type="creator" style="max-width:780px;min-width:288px;"><section><a target="_blank" href="https://www.tiktok.com/@metalhub.np?refer=creator_embed">@metalhub.np</a></section></blockquote><script async src="https://www.tiktok.com/embed.js"></script>'
 ---
 ```
 
@@ -242,7 +267,7 @@ The CSS already applies this font to the Newari locale:
 
 ```css
 [data-locale="newa"] {
-  font-family: "Ranjana Lipi", "Noto Sans Devanagari", var(--font-body);
+  font-family: "Ranjana Lipi", "Noto Sans Devanagari", var(--font-sans);
 }
 ```
 
@@ -255,27 +280,30 @@ After deployment, verify everything works:
 ### Pages to check
 
 - [ ] `/` — Home page loads, hero displays, featured products render
-- [ ] `/products/` — Product grid shows all products
-- [ ] `/products/:slug` — Product detail with attribute selectors and pricing
-- [ ] `/checkout/` — Cart, form, map picker, and order buttons work
-- [ ] `/social` — Facebook plugin loads, Instagram/TikTok embeds render
+- [ ] `/products/` — Product grid shows all products, "Load More" pagination works
+- [ ] `/products/:slug` — Product detail with gallery, lightbox, share button, attribute selectors
+- [ ] `/checkout/` — Cart (with product images and links), form, map with search, order buttons
+- [ ] `/social` — Facebook plugin, TikTok profile, Instagram profile embeds load
 - [ ] `/ne/...` — All Nepali pages render with correct translations
 - [ ] `/newa/...` — All Newari pages render in Ranjana script
 
 ### Functional checks
 
-- [ ] Language toggle switches between EN/NE/Newari and preserves the current page
-- [ ] Add a product to cart → cart badge updates → cart persists across pages
-- [ ] Attribute selection updates the displayed price
-- [ ] Map picker loads and allows placing a pin
-- [ ] "Order via WhatsApp" opens WhatsApp with a pre-filled message
-- [ ] "Order via Messenger" opens Messenger with a pre-filled message
+- [ ] Language switcher changes locale via SPA (no page refresh)
+- [ ] Active nav link highlights current page
+- [ ] Attribute selection updates price and URL params (`?Size=Large`)
+- [ ] Product page gallery: thumbnails, arrows, lightbox, attribute image swap
+- [ ] Share button opens popup with social share options
+- [ ] Cart shows product images and clickable product names with attribute params
+- [ ] Map with search loads and allows placing a pin by searching landmarks
+- [ ] "Order via WhatsApp" opens WhatsApp with a pre-filled message including product links
+- [ ] Order buttons disabled until name + phone + delivery location are filled
 
 ### CMS check
 
 - [ ] Navigate to `/admin`
 - [ ] Log in with GitHub OAuth
-- [ ] Create a test product and save
+- [ ] Create a test product with translatable attributes and social embeds
 - [ ] Verify the rebuild triggers and the product appears on the site
 
 ## 11. Custom Domain (Optional)
@@ -301,6 +329,10 @@ Verify the `repo` field in `public/admin/config.yml` matches `<your-username>/<r
 ### Map doesn't load
 
 Check the browser console for errors. Leaflet loads from unpkg CDN — ensure there are no content security policy blocks. The map is lazy-loaded and only initializes when scrolled into view.
+
+### Social embeds not loading on SPA navigation
+
+Social embeds (TikTok, Instagram, Facebook) re-initialize on `astro:page-load` events. If they don't appear, check the browser console for script loading errors.
 
 ### Ranjana font not rendering
 
