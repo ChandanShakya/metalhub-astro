@@ -67,7 +67,7 @@ const products = defineCollection({
 });
 
 const settings = defineCollection({
-    loader: glob({ pattern: "**/*.json", base: "./src/content/settings" }),
+    loader: glob({ pattern: "**/*.md", base: "./src/content/settings" }),
     schema: z.object({
         whatsappNumber: z.string().default("9779861760709"),
         messengerPage: z.string().default("metalhub.np"),
@@ -75,12 +75,12 @@ const settings = defineCollection({
 });
 
 const i18nCollection = defineCollection({
-    loader: glob({ pattern: "**/*.json", base: "./src/content/i18n" }),
+    loader: glob({ pattern: "**/*.md", base: "./src/content/i18n" }),
     schema: z.object({
         key: z.string(),
-        en: z.record(z.string(), z.string()),
-        ne: z.record(z.string(), z.string()),
-        newa: z.record(z.string(), z.string()),
+        en: z.string(),
+        ne: z.string(),
+        newa: z.string(),
     }),
 });
 

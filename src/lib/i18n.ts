@@ -22,11 +22,12 @@ export async function loadCMSTranslations(): Promise<Record<string, Record<strin
         const entries = await getCollection("i18n");
         cmsTranslations = {};
         for (const entry of entries) {
-            const data = entry.data as Record<string, unknown>;
+            const data = entry.data as { key: string; en: string; ne: string; newa: string };
+            if (!data.key) continue;
             for (const locale of locales) {
-                if (typeof data[locale] === "object" && data[locale] !== null) {
+                if (typeof data[locale] === "string") {
                     if (!cmsTranslations[locale]) cmsTranslations[locale] = {};
-                    Object.assign(cmsTranslations[locale], data[locale] as Record<string, string>);
+                    cmsTranslations[locale][data.key] = data[locale];
                 }
             }
         }

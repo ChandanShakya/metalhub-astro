@@ -7,19 +7,19 @@ backend:
 media_folder: "public/images/products"
 public_folder: "/images/products"
 
-i18n:
-  structure: multiple_files
-  locales: [en, ne, newa]
-  default_locale: en
-
 collections:
   - name: categories
     label: Categories
     folder: src/content/categories
     create: true
-    i18n: true
     fields:
-      - { label: Name, name: name, widget: string, i18n: true }
+      - label: Name
+        name: name
+        widget: object
+        fields:
+          - { label: English, name: en, widget: string }
+          - { label: Nepali, name: ne, widget: string }
+          - { label: Newari, name: newa, widget: string }
       - { label: Slug, name: slug, widget: string }
       - {
           label: Icon,
@@ -40,11 +40,22 @@ collections:
     label: Products
     folder: src/content/products
     create: true
-    i18n: true
     fields:
-      - { label: Name, name: name, widget: string, i18n: true }
+      - label: Name
+        name: name
+        widget: object
+        fields:
+          - { label: English, name: en, widget: string }
+          - { label: Nepali, name: ne, widget: string }
+          - { label: Newari, name: newa, widget: string }
       - { label: Slug, name: slug, widget: string }
-      - { label: Description, name: description, widget: markdown, i18n: true }
+      - label: Description
+        name: description
+        widget: object
+        fields:
+          - { label: English, name: en, widget: string }
+          - { label: Nepali, name: ne, widget: string }
+          - { label: Newari, name: newa, widget: string }
       - {
           label: Category,
           name: category,
@@ -80,7 +91,6 @@ collections:
           - label: Attribute Name
             name: name
             widget: object
-            i18n: true
             fields:
               - {
                   label: English,
@@ -97,7 +107,6 @@ collections:
               - label: Label
                 name: label
                 widget: object
-                i18n: true
                 fields:
                   - { label: English, name: en, widget: string }
                   - { label: Nepali, name: ne, widget: string }
@@ -169,7 +178,7 @@ collections:
   - name: settings
     label: Site Settings
     folder: src/content/settings
-    create: false
+    create: true
     i18n: false
     fields:
       - {
