@@ -21,13 +21,12 @@ const t = getTranslations(locale);
     <h2 id="cart-title" class="text-2xl font-bold mb-5"></h2>
     <div id="cart-items"></div>
     <div id="cart-subtotal"></div>
-    <div id="cart-empty" class="text-center py-12 text-text-3"></div>
+    <div id="cart-empty" class="text-center py-12 text-text-3 hidden">{t("cart.empty")}</div>
   </div>
 </div>
 
 <script is:inline define:vars={{ showCheckoutLink }}>
   function getLocale() { var m = window.location.pathname.match(/^\/(ne|newa)\//); return m ? m[1] : document.documentElement.dataset.locale || "en"; }
-  var uiText = JSON.parse(document.getElementById("cart-widget")?.getAttribute("data-ui-text") || "{}");
   const CART_KEY = "metalhub-cart";
 
   function getCart() {
@@ -38,7 +37,12 @@ const t = getTranslations(locale);
     window.dispatchEvent(new Event("cart-updated"));
   }
 
+  function getUiText() {
+    try { return JSON.parse(document.getElementById("cart-widget")?.getAttribute("data-ui-text") || "{}"); } catch { return {}; }
+  }
+
   function render() {
+    var uiText = getUiText();
     const cart = getCart();
     const container = document.getElementById("cart-items");
     const subtotalEl = document.getElementById("cart-subtotal");
@@ -117,6 +121,12 @@ const t = getTranslations(locale);
     render();
   };
 
-  document.addEventListener("astro:page-load", render);
+  window.__cartCtx = window.__cartCtx || { id: 0, abort: null };
+  var _cartId = ++window.__cartCtx.id;
+
+  document.addEventListener("astro:page-load", function() {
+    if (window.__cartCtx.id !== _cartId) return;
+    render();
+  });
   render();
 </script>
