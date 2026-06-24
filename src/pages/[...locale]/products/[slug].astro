@@ -20,18 +20,18 @@ export async function getStaticPaths() {
 
 const { product, locale } = Astro.props;
 const t = getTranslations(locale);
-const name = product.data.name[locale as keyof typeof product.data.name] || product.data.name.en;
+const productName = product.data.name[locale as keyof typeof product.data.name] || product.data.name.en;
 const description =
     product.data.description[locale as keyof typeof product.data.description] || product.data.description.en;
 const productImages = product.data.images.length > 0 ? product.data.images : ["/images/products/placeholder.jpg"];
 ---
 
-<BaseLayout title={name} locale={locale} description={description}>
+<BaseLayout title={productName} locale={locale} description={description}>
   <section class="py-8 container mx-auto px-4">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-12">
       <div>
-        <div id="main-image-wrapper" class="relative rounded-xl overflow-hidden bg-gradient-to-br from-surface-3 to-border cursor-zoom-in" data-product-images={JSON.stringify(productImages)} onclick="document.getElementById('lightbox').classList.remove('hidden')">
-          <img id="main-image" src={productImages[0]} alt={name} class="w-full aspect-square object-cover transition-transform duration-500 hover:scale-[1.02]" />
+        <div id="main-image-wrapper" class="relative rounded-xl overflow-hidden bg-linear-to-br from-surface-3 to-border cursor-zoom-in" data-product-images={JSON.stringify(productImages)} onclick="document.getElementById('lightbox').classList.remove('hidden')">
+          <img id="main-image" src={productImages[0]} alt={productName} class="w-full aspect-square object-cover transition-transform duration-500 hover:scale-[1.02]" />
         </div>
 
         <div class="relative mt-3">
@@ -39,7 +39,7 @@ const productImages = product.data.images.length > 0 ? product.data.images : ["/
           <div id="gallery-track" class="flex gap-2 overflow-x-auto pb-1 scroll-smooth px-10">
             {productImages.map((img, i) => (
               <button class="gallery-thumb shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 border-border transition-[colors,transform] hover:border-accent cursor-pointer relative group" data-image={img} data-index={String(i)}>
-                <img src={img} alt={name + " " + (i + 1)} class="w-full h-full object-cover" loading="lazy" decoding="async" />
+                <img src={img} alt={productName + " " + (i + 1)} class="w-full h-full object-cover" loading="lazy" decoding="async" />
                 <span class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                   <svg class="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                 </span>
@@ -52,7 +52,7 @@ const productImages = product.data.images.length > 0 ? product.data.images : ["/
 
       <div>
         <div class="flex items-center gap-3 mb-2">
-          <h1 class="text-2xl font-bold flex-1">{name}</h1>
+          <h1 class="text-2xl font-bold flex-1">{productName}</h1>
           <button id="share-btn" class="w-10 h-10 flex items-center justify-center border border-border rounded-full text-text-2 hover:border-accent hover:text-accent transition-[colors,transform] cursor-pointer" aria-label="Share">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
           </button>
@@ -68,7 +68,7 @@ const productImages = product.data.images.length > 0 ? product.data.images : ["/
           locale={locale}
           basePrice={product.data.basePrice}
           productSlug={product.data.slug}
-          productName={name}
+          productName={productName}
         />
       </div>
     </div>
@@ -79,28 +79,28 @@ const productImages = product.data.images.length > 0 ? product.data.images : ["/
       <h2 class="text-xl font-bold mb-6">{t("social.latestPosts")}</h2>
       <div class="flex flex-col items-center gap-8">
         {product.data.socialEmbeds.map((embed) => (
-          <div class="w-full max-w-[780px] rounded-xl" data-social-embed={embed.platform} set:html={embed.embedCode} />
+          <div class="w-full max-w-195 rounded-xl" data-social-embed={embed.platform} set:html={embed.embedCode} />
         ))}
       </div>
     </section>
   )}
 
-  <div id="lightbox" class="hidden fixed inset-0 z-[1000] bg-black/90 flex items-center justify-center p-4">
+  <div id="lightbox" class="hidden fixed inset-0 z-1000 bg-black/90 flex items-center justify-center p-4">
     <button class="absolute top-4 right-4 text-white text-3xl font-bold cursor-pointer hover:text-accent transition-colors z-10" onclick="document.getElementById('lightbox').classList.add('hidden')" aria-label="Close">&times;</button>
     <button id="lightbox-prev" class="absolute left-4 top-1/2 -translate-y-1/2 text-white text-4xl cursor-pointer hover:text-accent transition-colors z-10" aria-label="Previous">&#8249;</button>
-    <img id="lightbox-img" src="" alt={name} class="max-w-full max-h-full object-contain rounded-lg" />
+    <img id="lightbox-img" src="" alt={productName} class="max-w-full max-h-full object-contain rounded-lg" />
     <button id="lightbox-next" class="absolute right-4 top-1/2 -translate-y-1/2 text-white text-4xl cursor-pointer hover:text-accent transition-colors z-10" aria-label="Next">&#8250;</button>
     <div id="lightbox-counter" class="absolute bottom-4 left-1/2 -translate-x-1/2 text-white text-sm font-medium bg-black/50 px-3 py-1 rounded-full"></div>
   </div>
 
-  <div id="share-popup" class="hidden fixed inset-0 z-[1000] bg-black/50 flex items-center justify-center p-4">
+  <div id="share-popup" class="hidden fixed inset-0 z-1000 bg-black/50 flex items-center justify-center p-4">
     <div class="bg-surface-2 rounded-2xl shadow-2xl max-w-sm w-full p-6 relative">
       <button id="share-close" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center text-text-3 hover:text-text-1 rounded-full hover:bg-surface-3 transition-colors cursor-pointer" aria-label="Close">&times;</button>
       <h3 class="text-lg font-bold mb-4">{t("share.title")}</h3>
       <div class="flex items-center gap-3 mb-5">
-        <img id="share-preview-img" src={productImages[0]} alt={name} class="w-16 h-16 rounded-lg object-cover" />
+        <img id="share-preview-img" src={productImages[0]} alt={productName} class="w-16 h-16 rounded-lg object-cover" />
         <div>
-          <p class="font-semibold text-sm">{name}</p>
+          <p class="font-semibold text-sm">{productName}</p>
           <p class="text-accent-dark font-bold text-sm">NPR {product.data.basePrice.toLocaleString()}</p>
         </div>
       </div>
@@ -125,7 +125,7 @@ const productImages = product.data.images.length > 0 ? product.data.images : ["/
     </div>
   </div>
 
-  <script is:inline>
+  <script is:inline define:vars={{ productName }}>
     var _galleryAbort = null;
 
     document.addEventListener("astro:page-load", function() {
@@ -280,7 +280,7 @@ const productImages = product.data.images.length > 0 ? product.data.images : ["/
         }
 
         function getShareText() {
-          return name + " \u2014 Metal Hub";
+          return productName + " \u2014 Metal Hub";
         }
 
         if (shareWhatsapp) shareWhatsapp.addEventListener("click", function() {
