@@ -19,7 +19,6 @@ const t = getTranslations(locale);
 <input type="hidden" id="delivery-lng" />
 
 <script is:inline>
-  function getLocale() { var m = window.location.pathname.match(/^\/(ne|newa)\//); return m ? m[1] : document.documentElement.dataset.locale || "en"; }
   var STORAGE_KEY = "metalhub-customer";
   var uiText = JSON.parse(document.getElementById("map")?.getAttribute("data-ui-text") || "{}");
 

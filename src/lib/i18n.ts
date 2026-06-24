@@ -31,9 +31,17 @@ export async function loadCMSTranslations(): Promise<Record<string, Record<strin
             }
         }
         return cmsTranslations || {};
-    } catch {
+    } catch (err) {
+        console.error("Failed to load CMS translations:", err);
         return {};
     }
+}
+
+export type LocalizedString = Record<Locale, string>;
+
+export function localizedValue(value: LocalizedString | undefined, locale: Locale): string {
+    if (!value) return "";
+    return value[locale] || value.en;
 }
 
 export function getTranslations(locale: Locale) {

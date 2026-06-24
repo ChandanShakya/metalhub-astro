@@ -86,7 +86,6 @@ function localize(obj: LocalizedString): string {
 </div>
 
 <script is:inline define:vars={{ checkoutPath }}>
-  function getLocale() { var m = window.location.pathname.match(/^\/(ne|newa)\//); return m ? m[1] : document.documentElement.dataset.locale || "en"; }
   var CART_KEY = "metalhub-cart";
   var uiText = JSON.parse(document.getElementById("add-to-cart-btn")?.getAttribute("data-ui-text") || "{}");
 

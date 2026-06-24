@@ -23,10 +23,10 @@ const isCheckout = currentPath.includes("/checkout");
 function langHref(langCode: string) {
     let path = currentPath;
     if (locale !== "en") {
-        path = path.replace(new RegExp("^/" + locale + "/?"), "/");
+        path = path.replace(new RegExp(`^/${locale}/?`), "/");
     }
     if (langCode === "en") return path;
-    return path === "/" ? "/" + langCode + "/" : "/" + langCode + path;
+    return path === "/" ? `/${langCode}/` : `/${langCode}${path}`;
 }
 
 const langs = ["en", "ne", "newa"] as const;
