@@ -12,7 +12,7 @@ export function getStaticPaths() {
 }
 
 const { locale } = Astro.props;
-const t = getTranslations(locale);
+const t = await getTranslations(locale);
 
 const products = await getCollection("products");
 const categories = await getCollection("categories");
@@ -36,7 +36,7 @@ const featured = products.filter((p) => p.data.featured && p.data.inStock).slice
             <Image src={product.data.images[0] || "/images/products/placeholder.jpg"} alt={product.data.name[locale as keyof typeof product.data.name] || product.data.name.en} class="w-full h-48 md:h-64 object-cover bg-gradient-to-br from-surface-3 to-border" width={600} height={400} loading="eager" decoding="sync" />
             <div class="p-4">
               <h2 class="text-base font-semibold mb-1">{product.data.name[locale as keyof typeof product.data.name] || product.data.name.en}</h2>
-              <div class="text-xs text-text-3 mb-2 capitalize">{product.data.category}</div>
+              <div class="text-xs text-text-3 mb-2">{t("products." + product.data.category) || product.data.category}</div>
               <div class="font-bold text-base text-accent-dark">NPR {product.data.basePrice.toLocaleString()}</div>
             </div>
           </a>

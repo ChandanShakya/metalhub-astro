@@ -1,5 +1,5 @@
 ---
-import { getTranslations, type Locale, loadCMSTranslations, localizedPath } from "../lib/i18n";
+import { getTranslations, type Locale, localizedPath } from "../lib/i18n";
 
 interface Props {
     locale: Locale;
@@ -7,9 +7,7 @@ interface Props {
 }
 
 const { locale, currentPath } = Astro.props;
-const t = getTranslations(locale);
-const cmsT = await loadCMSTranslations();
-const attrTranslations = cmsT[locale] || {};
+const t = await getTranslations(locale);
 
 const navItems = [
     { href: "/", key: "nav.home" },
@@ -65,7 +63,7 @@ const langs = ["en", "ne", "newa"] as const;
           </svg>
           <span id="cart-badge" class="absolute -top-1.5 -right-2 hidden bg-sale text-white text-[0.6rem] font-bold min-w-4 h-4 rounded-full items-center justify-center px-1 leading-none" aria-label="items in cart">0</span>
         </a>
-        <div id="cart-dropdown" data-ui-text={JSON.stringify({ empty: t("cart.empty"), subtotal: t("cart.subtotal"), checkout: t("cart.checkout"), noImg: t("cart.noImg"), attrTranslations: attrTranslations })} class="hidden fixed md:absolute top-full right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-surface-2 border border-border rounded-xl shadow-xl z-200 overflow-hidden">
+        <div id="cart-dropdown" data-ui-text={JSON.stringify({ locale, empty: t("cart.empty"), subtotal: t("cart.subtotal"), checkout: t("cart.checkout"), noImg: t("cart.noImg") })} class="hidden fixed md:absolute top-full right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-surface-2 border border-border rounded-xl shadow-xl z-200 overflow-hidden">
           <div class="p-4">
             <div id="cart-dropdown-items"></div>
             <div id="cart-empty" class="text-center py-4 text-text-3 text-sm"></div>
@@ -131,7 +129,7 @@ const langs = ["en", "ne", "newa"] as const;
   </div>
 </div>
 
-<script is:inline define:vars={{ langLabels: JSON.stringify(langLabels) }}>
+<script is:inline>
   function getLocale() { var m = window.location.pathname.match(/^\/(ne|newa)\//); return m ? m[1] : "en"; }
   var CART_KEY = "metalhub-cart";
   var uiText = JSON.parse(document.getElementById("cart-dropdown")?.getAttribute("data-ui-text") || "{}");
@@ -183,7 +181,8 @@ const langs = ["en", "ne", "newa"] as const;
     itemsEl.innerHTML = cart.map(function(item, i) {
       subtotal += item.unitPrice * item.qty;
       var itemName = (item.nameAll && item.nameAll[getLocale()]) || item.name;
-      var opts = Object.entries(item.selectedOptions || {}).map(function(e) { return translateLabel(e[0]) + ": " + translateLabel(e[1]); }).join(", ");
+      var labels = (item.selectedOptionsLabelsAll && item.selectedOptionsLabelsAll[getLocale()]) || item.selectedOptionsLabels || {};
+      var opts = Object.entries(item.selectedOptions || {}).map(function(e) { return translateLabel(e[0], labels) + ": " + translateLabel(e[1], labels); }).join(", ");
       var params = new URLSearchParams();
       Object.entries(item.selectedOptions || {}).forEach(function(e) { params.set(e[0], e[1]); });
       var queryStr = params.toString() ? "?" + params.toString() : "";
@@ -228,13 +227,9 @@ const langs = ["en", "ne", "newa"] as const;
     }
   };
 
-  function translateLabel(key) {
-    var t = uiText.attrTranslations;
-    if (t) { var k = key.toLowerCase(); return t[k] || key; }
-    return key;
+  function translateLabel(key, labels) {
+    return (labels && labels[key]) || key;
   }
-
-  function getLocale() { var m = window.location.pathname.match(/^\/(ne|newa)\//); return m ? m[1] : "en"; }
 
     window.__cartRemoveItem = function(index) {
     var cart = getCart();

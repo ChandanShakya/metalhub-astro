@@ -6,7 +6,7 @@ interface Props {
     locale: Locale;
 }
 const { locale } = Astro.props;
-const t = getTranslations(locale);
+const t = await getTranslations(locale);
 ---
 
 <div class="mb-4">
@@ -20,10 +20,13 @@ const t = getTranslations(locale);
 
 <script is:inline>
   var STORAGE_KEY = "metalhub-customer";
-  var uiText = JSON.parse(document.getElementById("map")?.getAttribute("data-ui-text") || "{}");
 
   function loadCustomer() {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch { return {}; }
+  }
+
+  function getUiText() {
+    try { return JSON.parse(document.getElementById("map")?.getAttribute("data-ui-text") || "{}"); } catch { return {}; }
   }
 
   function loadCSS(href) {
@@ -57,6 +60,8 @@ const t = getTranslations(locale);
     var statusEl = document.getElementById("map-status");
     if (!mapEl || mapEl.dataset.initialized) return;
 
+    var uiText = getUiText();
+
     var observer = new IntersectionObserver(function(entries) {
       if (entries[0].isIntersecting) {
         observer.disconnect();
@@ -65,7 +70,7 @@ const t = getTranslations(locale);
         loadCSS("https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.css");
         loadJS("https://unpkg.com/leaflet@1.9.4/dist/leaflet.js", function() {
           loadJS("https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.js", function() {
-            initMap(mapEl, statusEl);
+            initMap(mapEl, statusEl, uiText);
           }, function() {
             statusEl.textContent = uiText.loadErr;
             statusEl.classList.add("text-sale");
@@ -79,7 +84,7 @@ const t = getTranslations(locale);
     observer.observe(mapEl);
   });
 
-  function initMap(mapEl, statusEl) {
+  function initMap(mapEl, statusEl, uiText) {
     var L = window.L;
     var saved = loadCustomer();
     var hasSaved = saved.lat && saved.lng;
@@ -96,12 +101,22 @@ const t = getTranslations(locale);
     var geocoder = L.Control.Geocoder.nominatim({
       geocodingQueryParams: { countrycodes: "np" }
     });
-    new L.Control.Geocoder({
+    var geocoderControl = new L.Control.Geocoder({
       geocoder: geocoder,
       position: "topright",
       placeholder: uiText.searchPlaceholder,
-      defaultMarkGeocode: true
+      defaultMarkGeocode: false,
+      formatGeocode: function(result) {
+        return result.name || "";
+      }
     }).addTo(map);
+
+    geocoderControl.on("markgeocode", function(e) {
+      if (e.geocode && e.geocode.center) {
+        setMarker(e.geocode.center);
+        map.setView(e.geocode.center, 16);
+      }
+    });
 
     var LocateControl = L.Control.extend({
       options: { position: "topleft" },
@@ -131,13 +146,6 @@ const t = getTranslations(locale);
       }
     });
     map.addControl(new LocateControl());
-
-    map.on("geocoder-markgeocode", function(e) {
-      if (e.geocode && e.geocode.center) {
-        setMarker(e.geocode.center);
-        map.setView(e.geocode.center, 16);
-      }
-    });
 
     var marker = null;
 

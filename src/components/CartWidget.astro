@@ -1,30 +1,28 @@
 ---
-import { getTranslations, type Locale, loadCMSTranslations } from "../lib/i18n";
+import { getTranslations, type Locale } from "../lib/i18n";
 
 interface Props {
     showCheckoutLink?: boolean;
     locale: Locale;
 }
 const { showCheckoutLink = true, locale } = Astro.props;
-const t = getTranslations(locale);
-const cmsT = await loadCMSTranslations();
-const attrTranslations = cmsT[locale] || {};
+const t = await getTranslations(locale);
 ---
 
 <div id="cart-widget" data-ui-text={JSON.stringify({
+    locale,
     title: t("cart.title"),
     empty: t("cart.empty"),
     subtotal: t("cart.subtotal"),
     checkout: t("cart.checkout"),
     clearAll: t("cart.clearAll"),
     noImg: t("cart.noImg"),
-    attrTranslations: attrTranslations,
 })}>
   <div class="mx-auto max-w-site px-4 py-8">
     <h2 id="cart-title" class="text-2xl font-bold mb-5"></h2>
     <div id="cart-items" aria-live="polite"></div>
     <div id="cart-subtotal"></div>
-    <div id="cart-empty" class="text-center py-12 text-text-3 hidden">{t("cart.empty")}</div>
+    <div id="cart-widget-empty" class="text-center py-12 text-text-3 hidden">{t("cart.empty")}</div>
   </div>
 </div>
 
@@ -49,7 +47,7 @@ const attrTranslations = cmsT[locale] || {};
     const cart = getCart();
     const container = document.getElementById("cart-items");
     const subtotalEl = document.getElementById("cart-subtotal");
-    const emptyEl = document.getElementById("cart-empty");
+    const emptyEl = document.getElementById("cart-widget-empty");
     const titleEl = document.getElementById("cart-title");
     if (!container || !subtotalEl || !emptyEl || !titleEl) return;
 
@@ -68,8 +66,8 @@ const attrTranslations = cmsT[locale] || {};
 
     container.innerHTML = '<div class="space-y-4">' + cart.map((item, i) => {
       subtotal += item.unitPrice * item.qty;
-      var at = uiText.attrTranslations || {};
-      function tl(key) { var k = key.toLowerCase(); return at[k] || key; }
+      var labels = (item.selectedOptionsLabelsAll && item.selectedOptionsLabelsAll[getLocale()]) || item.selectedOptionsLabels || {};
+      function tl(key) { return labels[key] || key; }
       var itemName = (item.nameAll && item.nameAll[getLocale()]) || item.name;
       const options = Object.entries(item.selectedOptions || {}).map(([k,v]) => tl(k) + ": " + tl(v)).join(", ");
       var imgSrc = (item.images && item.images.length > 0 ? item.images[0] : "") || item.image || "";

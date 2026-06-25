@@ -1,6 +1,6 @@
 ---
 import type { Locale } from "../lib/i18n";
-import { getTranslations, loadCMSTranslations } from "../lib/i18n";
+import { getTranslations } from "../lib/i18n";
 
 interface Props {
     locale: Locale;
@@ -8,12 +8,10 @@ interface Props {
     messengerPage: string;
 }
 const { locale, whatsappNumber, messengerPage } = Astro.props;
-const t = getTranslations(locale);
-const cmsT = await loadCMSTranslations();
-const attrTranslations = cmsT[locale] || {};
+const t = await getTranslations(locale);
 ---
 
-<div id="order-error" aria-live="polite" data-ui-text={JSON.stringify({ nameRequired: t("checkout.nameRequired"), phoneRequired: t("checkout.phoneRequired"), phoneInvalid: t("checkout.phoneInvalid"), locationRequired: t("checkout.locationRequired"), cartEmpty: t("checkout.cartEmpty"), attrTranslations: attrTranslations })} class="hidden bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-4"></div>
+<div id="order-error" aria-live="polite" data-ui-text={JSON.stringify({ locale, nameRequired: t("checkout.nameRequired"), phoneRequired: t("checkout.phoneRequired"), phoneInvalid: t("checkout.phoneInvalid"), locationRequired: t("checkout.locationRequired"), cartEmpty: t("checkout.cartEmpty") })} class="hidden bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-4"></div>
 
 <div class="flex flex-col gap-3 mt-6">
   <button id="btn-whatsapp" disabled class="bg-whatsapp text-white border-none rounded-xl py-3.5 px-5 text-base font-semibold cursor-not-allowed transition-[colors,transform] opacity-50 hover:bg-[#1eac5a] hover:-translate-y-px hover:shadow-[0_4px_12px_rgb(37_211_102/0.3)]">
@@ -29,10 +27,8 @@ const attrTranslations = cmsT[locale] || {};
   var CART_KEY = "metalhub-cart";
   var uiText = JSON.parse(document.getElementById("order-error")?.getAttribute("data-ui-text") || "{}");
 
-  function translateLabel(key) {
-    var t = uiText.attrTranslations;
-    if (t) { var k = key.toLowerCase(); return t[k] || key; }
-    return key;
+  function translateLabel(key, labels) {
+    return (labels && labels[key]) || key;
   }
 
   function getCart() {
@@ -104,7 +100,8 @@ const attrTranslations = cmsT[locale] || {};
 
     cart.forEach(function(item, i) {
       var itemName = (item.nameAll && item.nameAll[getLocale()]) || item.name;
-      var opts = Object.entries(item.selectedOptions || {}).map(function(e) { return translateLabel(e[0]) + ": " + translateLabel(e[1]); }).join(", ");
+      var itemLabels = (item.selectedOptionsLabelsAll && item.selectedOptionsLabelsAll[getLocale()]) || item.selectedOptionsLabels || {};
+      var opts = Object.entries(item.selectedOptions || {}).map(function(e) { return translateLabel(e[0], itemLabels) + ": " + translateLabel(e[1], itemLabels); }).join(", ");
       var price = item.hasDiscount
         ? "NPR " + item.unitPrice.toLocaleString() + " (was NPR " + item.originalUnitPrice.toLocaleString() + ")"
         : "NPR " + item.unitPrice.toLocaleString();
