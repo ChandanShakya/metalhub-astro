@@ -25,6 +25,10 @@ const productName = product.data.name[locale as keyof typeof product.data.name] 
 const description =
     product.data.description[locale as keyof typeof product.data.description] || product.data.description.en;
 const productImages = product.data.images.length > 0 ? product.data.images : ["/images/products/placeholder.jpg"];
+const processedEmbeds = product.data.socialEmbeds?.map((embed) => ({
+    ...embed,
+    embedCode: embed.embedCode.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ""),
+}));
 
 const schemaJson = JSON.stringify({
     "@context": "https://schema.org",
@@ -92,11 +96,11 @@ const schemaJson = JSON.stringify({
     </div>
   </section>
 
-  {product.data.socialEmbeds && product.data.socialEmbeds.length > 0 && (
+  {processedEmbeds && processedEmbeds.length > 0 && (
     <section id="product-social" class="py-8 container mx-auto px-4 border-t border-border">
       <h2 class="text-xl font-bold mb-6">{t("social.latestPosts")}</h2>
       <div class="flex flex-col items-center gap-8">
-        {product.data.socialEmbeds.map((embed) => (
+        {processedEmbeds.map((embed) => (
           <div class="w-full max-w-195 rounded-xl" data-social-embed={embed.platform} set:html={embed.embedCode} />
         ))}
       </div>
@@ -282,23 +286,26 @@ const schemaJson = JSON.stringify({
         }, { signal: signal });
       }
 
-      var socialSection = document.getElementById("product-social");
-      if (socialSection) {
-        var socialObserver = new IntersectionObserver(function(entries) {
-          if (entries[0].isIntersecting) {
-            socialObserver.disconnect();
-            socialSection.querySelectorAll("[data-social-embed]").forEach(function(el) {
-              var platform = el.getAttribute("data-social-embed");
-              if (platform === "facebook") processFacebookEmbeds();
-              else if (platform === "instagram") processInstagramEmbeds();
-              else if (platform === "tiktok") processTikTokEmbeds();
-            });
+      var _socialLoaded = { fb: false, ig: false, tt: false };
+
+      function loadSocialEmbeds(socialSection) {
+        if (!socialSection) return;
+        socialSection.querySelectorAll("[data-social-embed]").forEach(function(el) {
+          var platform = el.getAttribute("data-social-embed");
+          if (platform === "facebook" && !_socialLoaded.fb) {
+            _socialLoaded.fb = true;
+            loadFacebookSDK();
+          } else if (platform === "instagram" && !_socialLoaded.ig) {
+            _socialLoaded.ig = true;
+            loadInstagramSDK();
+          } else if (platform === "tiktok" && !_socialLoaded.tt) {
+            _socialLoaded.tt = true;
+            loadTikTokSDK();
           }
-        }, { rootMargin: "200px" });
-        socialObserver.observe(socialSection);
+        });
       }
 
-      function processFacebookEmbeds() {
+      function loadFacebookSDK() {
         if (window.FB && FB.XFBML) {
           try { FB.XFBML.parse(); } catch(e) {}
         } else if (!document.querySelector('script[src*="connect.facebook.net"]')) {
@@ -310,7 +317,7 @@ const schemaJson = JSON.stringify({
         }
       }
 
-      function processInstagramEmbeds() {
+      function loadInstagramSDK() {
         if (window.instgrm && window.instgrm.Embeds) {
           try { window.instgrm.Embeds.process(); } catch(e) {}
         } else if (!document.querySelector('script[src*="instagram.com/embed.js"]')) {
@@ -321,7 +328,7 @@ const schemaJson = JSON.stringify({
         }
       }
 
-      function processTikTokEmbeds() {
+      function loadTikTokSDK() {
         if (window.tiktok && window.tiktok.embed) {
           try { window.tiktok.embed(); } catch(e) {}
         } else if (!document.querySelector('script[src*="tiktok.com/embed.js"]')) {
@@ -334,6 +341,21 @@ const schemaJson = JSON.stringify({
             }
           };
           document.head.appendChild(s);
+        }
+      }
+
+      var socialSection = document.getElementById("product-social");
+      if (socialSection) {
+        if (socialSection.getBoundingClientRect().top < window.innerHeight + 200) {
+          loadSocialEmbeds(socialSection);
+        } else {
+          var socialObserver = new IntersectionObserver(function(entries) {
+            if (entries[0].isIntersecting) {
+              socialObserver.disconnect();
+              loadSocialEmbeds(socialSection);
+            }
+          }, { rootMargin: "200px" });
+          socialObserver.observe(socialSection);
         }
       }
 
