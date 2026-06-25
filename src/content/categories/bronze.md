@@ -4,6 +4,6 @@ name:
   ne: काँस
   newa: काँस
 slug: bronze
-icon: 🏺
+icon: 🟠
 order: 3
 ---
