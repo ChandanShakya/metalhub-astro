@@ -1,0 +1,50 @@
+---
+/**
+ * OptimizedImage — renders <picture> with WebP source + original fallback.
+ *
+ * For JPEG/PNG images in public/images/, the pre-build script generates
+ * sidecar .webp files. This component serves WebP when the browser
+ * supports it and falls back to the original format otherwise.
+ *
+ * ⚠️ Non-convertible formats (WebP, SVG, GIF, AVIF, etc.) render as
+ *    a plain <img> — no <picture> wrapper.
+ *
+ * Props mirror those of a standard <img> tag:
+ *   src    – original image path (e.g. /images/products/foo.jpg)
+ *   alt    – alt text
+ *   class  – CSS classes
+ *   id     – element id (applied to the inner <img>)
+ *   width, height – intrinsic dimensions
+ *   loading – "lazy" | "eager"
+ *   decoding – "async" | "sync" | "auto"
+ *   style  – inline styles
+ */
+
+export interface Props {
+    src: string;
+    alt: string;
+    class?: string;
+    id?: string;
+    width?: number;
+    height?: number;
+    loading?: "lazy" | "eager";
+    decoding?: "async" | "sync" | "auto";
+    style?: string;
+}
+
+const { src, alt, ...attrs } = Astro.props;
+
+const isConvertible = /\.(jpe?g|png)$/i.test(src);
+const webpSrc = isConvertible ? src.replace(/\.(jpe?g|png)$/i, ".webp") : null;
+---
+
+{
+    webpSrc ? (
+        <picture>
+            <source srcset={webpSrc} type="image/webp" />
+            <img src={src} alt={alt} {...attrs} />
+        </picture>
+    ) : (
+        <img src={src} alt={alt} {...attrs} />
+    )
+}
