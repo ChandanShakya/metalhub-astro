@@ -1,9 +1,9 @@
 ---
-slug: bronze
 name:
-  en: "Bronze"
-  ne: "काँस"
-  newa: "काँस"
-icon: "\U0001FA99"
+  en: Bronze
+  ne: काँस
+  newa: काँस
+slug: bronze
+icon: 🏺
 order: 3
 ---
