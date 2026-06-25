@@ -14,10 +14,10 @@ const t = await getTranslations(locale);
 <div id="order-error" aria-live="polite" data-ui-text={JSON.stringify({ locale, nameRequired: t("checkout.nameRequired"), phoneRequired: t("checkout.phoneRequired"), phoneInvalid: t("checkout.phoneInvalid"), locationRequired: t("checkout.locationRequired"), cartEmpty: t("checkout.cartEmpty") })} class="hidden bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-4"></div>
 
 <div class="flex flex-col gap-3 mt-6">
-  <button id="btn-whatsapp" disabled class="bg-whatsapp text-white border-none rounded-xl py-3.5 px-5 text-base font-semibold cursor-not-allowed transition-[colors,transform] opacity-50 hover:bg-[#1eac5a] hover:-translate-y-px hover:shadow-[0_4px_12px_rgb(37_211_102/0.3)]">
+  <button id="btn-whatsapp" disabled class="bg-whatsapp text-white border-none rounded-xl py-3.5 px-5 text-base font-semibold cursor-not-allowed transition-[colors,transform] opacity-50 hover:bg-[#1eac5a] hover:-translate-y-px hover:shadow-[0_4px_12px_rgb(16_133_77/0.3)]">
     {t("checkout.orderWhatsApp")}
   </button>
-  <button id="btn-messenger" disabled class="bg-messenger text-white border-none rounded-xl py-3.5 px-5 text-base font-semibold cursor-not-allowed transition-[colors,transform] opacity-50 hover:bg-[#005ce6] hover:-translate-y-px hover:shadow-[0_4px_12px_rgb(0_132_255/0.3)]">
+  <button id="btn-messenger" disabled class="bg-messenger text-white border-none rounded-xl py-3.5 px-5 text-base font-semibold cursor-not-allowed transition-[colors,transform] opacity-50 hover:bg-[#0088ff] hover:-translate-y-px hover:shadow-[0_4px_12px_rgb(0_114_224/0.3)]">
     {t("checkout.orderMessenger")}
   </button>
 </div>
