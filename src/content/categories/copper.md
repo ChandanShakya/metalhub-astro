@@ -4,6 +4,6 @@ name:
   ne: तामा
   newa: तामा
 slug: copper
-icon: 🏺
+icon: 🟤
 order: 2
 ---
