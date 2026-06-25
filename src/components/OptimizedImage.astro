@@ -1,19 +1,21 @@
 ---
 /**
- * OptimizedImage — renders <picture> with WebP source + original fallback.
+ * OptimizedImage — renders responsive <picture> with WebP srcset + fallback.
  *
- * For JPEG/PNG images in public/images/, the pre-build script generates
- * sidecar .webp files. This component serves WebP when the browser
- * supports it and falls back to the original format otherwise.
+ * For convertible images (JPEG/PNG in public/images/), the pre-build script
+ * (scripts/optimize-images.mjs) generates sidecar WebP files at responsive
+ * widths (300w, 600w, 900w, 1200w). This component builds a proper srcset
+ * for those variants and sets the sizes attribute so the browser downloads
+ * the smallest appropriate version.
  *
- * ⚠️ Non-convertible formats (WebP, SVG, GIF, AVIF, etc.) render as
- *    a plain <img> — no <picture> wrapper.
+ * Non-convertible formats (WebP, SVG, GIF, AVIF, etc.) render as a plain
+ * <img> — no <picture> wrapper.
  *
- * Props mirror those of a standard <img> tag:
- *   src    – original image path (e.g. /images/products/foo.jpg)
- *   alt    – alt text
- *   class  – CSS classes
- *   id     – element id (applied to the inner <img>)
+ * Props mirror a standard <img> tag:
+ *   src     – original image path (e.g. /images/products/foo.jpg)
+ *   alt     – alt text
+ *   sizes   – responsive sizes attribute (default: derived from width prop)
+ *   class   – CSS classes
  *   width, height – intrinsic dimensions
  *   loading – "lazy" | "eager"
  *   decoding – "async" | "sync" | "auto"
@@ -23,6 +25,7 @@
 export interface Props {
     src: string;
     alt: string;
+    sizes?: string;
     class?: string;
     id?: string;
     width?: number;
@@ -32,19 +35,52 @@ export interface Props {
     style?: string;
 }
 
-const { src, alt, ...attrs } = Astro.props;
+const { src, alt, sizes, ...attrs } = Astro.props;
 
 const isConvertible = /\.(jpe?g|png)$/i.test(src);
+
+// Build a width-based srcset from pre-generated sidecar files.
+// The pre-build script (scripts/optimize-images.mjs) generates
+// name-{width}w.webp for each width below the original image size.
+function buildSrcset(baseSrc: string): string | null {
+    if (!isConvertible) return null;
+    // 1200w is omitted because product images are 1080px wide;
+    // the build script skips widths >= original width.
+    const widths = [300, 600, 900];
+
+    const match = baseSrc.match(/^\/?(.*?)\/([^/]+)\.(jpe?g|png)$/i);
+    if (!match) return null;
+
+    const dirPath = match[1];
+    const baseName = match[2];
+
+    const descriptors = widths.map((w) => `/${dirPath}/${baseName}-${w}w.webp ${w}w`).join(", ");
+
+    return descriptors || null;
+}
+
+const srcset = buildSrcset(src);
 const webpSrc = isConvertible ? src.replace(/\.(jpe?g|png)$/i, ".webp") : null;
+const defaultSizes = sizes || (attrs.width ? `${attrs.width}px` : "100vw");
+const hasResponsive = !!(srcset && webpSrc);
+const fallbackSizes = attrs.width ? `${attrs.width}px` : "100vw";
 ---
 
 {
-    webpSrc ? (
+    // WebP picture with responsive srcset
+    hasResponsive ? (
+        <picture>
+            <source srcset={srcset} sizes={defaultSizes} type="image/webp" />
+            <img src={webpSrc!} alt={alt} {...attrs} sizes={fallbackSizes} />
+        </picture>
+    ) : webpSrc ? (
+        // WebP available but no responsive variants (single-size fallback)
         <picture>
             <source srcset={webpSrc} type="image/webp" />
             <img src={src} alt={alt} {...attrs} />
         </picture>
     ) : (
+        // Non-convertible format — plain img
         <img src={src} alt={alt} {...attrs} />
     )
 }

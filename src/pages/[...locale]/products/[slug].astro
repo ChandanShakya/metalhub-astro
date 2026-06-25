@@ -47,7 +47,7 @@ const schemaJson = JSON.stringify({
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-12">
       <div>
         <div id="main-image-wrapper" class="relative rounded-xl overflow-hidden bg-linear-to-br from-surface-3 to-border cursor-zoom-in" data-product-images={JSON.stringify(productImages)}>
-          <OptimizedImage id="main-image" src={productImages[0]} alt={productName} class="w-full aspect-square object-cover transition-transform duration-500 hover:scale-[1.02]" width={800} height={800} loading="eager" decoding="sync" />
+          <OptimizedImage id="main-image" src={productImages[0]} alt={productName} class="w-full aspect-square object-cover transition-transform duration-500 hover:scale-[1.02]" width={800} height={800} sizes="(min-width: 768px) 50vw, 100vw" loading="eager" decoding="sync" />
         </div>
 
         <div class="relative mt-3">
