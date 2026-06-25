@@ -3,7 +3,6 @@
     "compatibility_date": "2026-06-24",
     "compatibility_flags": ["global_fetch_strictly_public"],
     "name": "metal-hub-site",
-    "pages_build_output_dir": "./dist/client",
     "observability": {
         "enabled": true
     }
