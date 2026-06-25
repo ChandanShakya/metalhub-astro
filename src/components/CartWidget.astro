@@ -22,7 +22,7 @@ const t = await getTranslations(locale);
     <h2 id="cart-title" class="text-2xl font-bold mb-5"></h2>
     <div id="cart-items" aria-live="polite"></div>
     <div id="cart-subtotal"></div>
-    <div id="cart-empty" class="text-center py-12 text-text-3 hidden">{t("cart.empty")}</div>
+    <div id="cart-widget-empty" class="text-center py-12 text-text-3 hidden">{t("cart.empty")}</div>
   </div>
 </div>
 
@@ -47,7 +47,7 @@ const t = await getTranslations(locale);
     const cart = getCart();
     const container = document.getElementById("cart-items");
     const subtotalEl = document.getElementById("cart-subtotal");
-    const emptyEl = document.getElementById("cart-empty");
+    const emptyEl = document.getElementById("cart-widget-empty");
     const titleEl = document.getElementById("cart-title");
     if (!container || !subtotalEl || !emptyEl || !titleEl) return;
 
