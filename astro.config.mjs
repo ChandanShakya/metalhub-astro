@@ -5,7 +5,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "astro/config";
 
 export default defineConfig({
-    site: "https://metalhub.com.np",
+    site: "https://metalhub.pages.dev",
     base: "/",
     vite: {
         plugins: [tailwindcss()],
