@@ -13,6 +13,12 @@ const { locale } = Astro.props;
 const t = await getTranslations(locale);
 ---
 <BaseLayout title={t("social.title")} locale={locale}>
+  <!-- Warm connections for third-party embed scripts -->
+  <link rel="preconnect" href="https://connect.facebook.net" />
+  <link rel="preconnect" href="https://www.instagram.com" />
+  <link rel="preconnect" href="https://www.tiktok.com" />
+  <link rel="preconnect" href="https://cdn.tiktok.com" />
+
   <section class="py-8 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
     <h1 class="text-center mb-8 text-2xl sm:text-3xl font-extrabold">{t("social.title")}</h1>
 
@@ -23,7 +29,8 @@ const t = await getTranslations(locale);
           {t("social.follow")} ↗
         </a>
       </h2>
-      <div id="fb-page-plugin" class="w-full max-w-125 mx-auto overflow-hidden">
+      <div id="fb-page-plugin" class="w-full max-w-125 mx-auto relative" style="min-height:500px;">
+        <div id="fb-root"></div>
         <div class="fb-page"
           data-href="https://www.facebook.com/profile.php?id=100092431583299"
           data-tabs="timeline"
@@ -34,6 +41,7 @@ const t = await getTranslations(locale);
           data-hide-cover="false"
           data-show-facepile="true">
         </div>
+        <div class="skeleton absolute inset-0 z-10 rounded-lg" style="height:500px;"></div>
       </div>
     </div>
 
@@ -44,8 +52,9 @@ const t = await getTranslations(locale);
           {t("social.follow")} ↗
         </a>
       </h2>
-      <div class="w-full max-w-125 mx-auto overflow-hidden">
+      <div id="ig-container" class="w-full max-w-125 mx-auto relative" style="min-height:420px;">
         <blockquote class="instagram-media" data-instgrm-permalink="https://www.instagram.com/metal_hub.np/" data-instgrm-version="14" style="max-width:100%;min-width:unset;width:100%;"></blockquote>
+        <div class="skeleton absolute inset-0 z-10 rounded-lg" style="height:420px;"></div>
       </div>
     </div>
 
@@ -56,63 +65,148 @@ const t = await getTranslations(locale);
           {t("social.follow")} ↗
         </a>
       </h2>
-      <div class="w-full max-w-125 mx-auto overflow-hidden">
+      <div id="tt-container" class="w-full max-w-125 mx-auto relative" style="min-height:480px;">
         <blockquote class="tiktok-embed" cite="https://www.tiktok.com/@metalhub.np" data-unique-id="metalhub.np" data-embed-from="embed_page" data-embed-type="creator" style="max-width:100%;min-width:288px;">
           <section>
             <a target="_blank" href="https://www.tiktok.com/@metalhub.np?refer=creator_embed">@metalhub.np</a>
           </section>
         </blockquote>
+        <div class="skeleton absolute inset-0 z-10 rounded-lg" style="height:480px;"></div>
       </div>
     </div>
   </section>
 
   <script is:inline>
-    function loadSocialEmbeds() {
-      // Facebook
-      var fbPage = document.querySelector(".fb-page");
-      if (fbPage) {
-        if (window.FB) {
-          try { FB.XFBML.parse(); } catch(e) {}
-        } else {
-          window.fbAsyncInit = function() {
-            try { FB.init({ xfbml: true, version: "v19.0" }); } catch(e) {}
-          };
-          var fbScript = document.createElement("script");
-          fbScript.src = "https://connect.facebook.net/en_US/sdk.js";
-          fbScript.async = true;
-          document.head.appendChild(fbScript);
-        }
-      }
+    var _socialLoaded = { fb: false, ig: false, tt: false };
 
-      // Instagram — re-process embeds or load fresh
-      var igEmbeds = document.querySelectorAll(".instagram-media");
-      if (igEmbeds.length > 0) {
-        if (window.instgrm && window.instgrm.Embeds) {
-          try { window.instgrm.Embeds.process(); } catch(e) {}
-        } else {
-          var igScript = document.createElement("script");
-          igScript.src = "https://www.instagram.com/embed.js";
-          igScript.async = true;
-          document.head.appendChild(igScript);
-        }
-      }
+    function hideSkeleton(container) {
+      if (!container) return;
+      var sk = container.querySelector(".skeleton");
+      if (sk) sk.style.display = "none";
+    }
 
-      // TikTok — re-process or load fresh
-      var ttEmbeds = document.querySelectorAll(".tiktok-embed");
-      if (ttEmbeds.length > 0) {
-        if (window.tiktok && window.tiktok.embed) {
-          try { window.tiktok.embed(); } catch(e) {}
-        } else {
-          var ttScript = document.createElement("script");
-          ttScript.src = "https://www.tiktok.com/embed.js";
-          ttScript.async = true;
-          document.head.appendChild(ttScript);
+    // Keep skeleton visible until the embed <iframe> has fully loaded.
+    // Falls back after 10s so the page is never stuck.
+    function waitForIframe(container, timeout) {
+      if (!container) return;
+      timeout = timeout || 10000;
+      var check = function() {
+        var iframe = container.querySelector("iframe");
+        if (iframe) {
+          if (iframe.complete || (iframe.contentWindow && iframe.contentWindow.document && iframe.contentWindow.document.readyState === "complete")) {
+            hideSkeleton(container);
+          } else {
+            iframe.addEventListener("load", function() { hideSkeleton(container); }, { once: true });
+            setTimeout(function() { if (container.querySelector("iframe")) hideSkeleton(container); }, 4000);
+          }
+          return true;
         }
+        return false;
+      };
+      if (!check()) {
+        var obs = new MutationObserver(function() {
+          if (check()) obs.disconnect();
+        });
+        obs.observe(container, { childList: true, subtree: true });
+      }
+      setTimeout(function() { hideSkeleton(container); }, timeout);
+    }
+
+    // Load each embed SDK only when its container scrolls into view.
+    function initEmbed(elementId, loadFn) {
+      var container = document.getElementById(elementId);
+      if (!container) return;
+
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            observer.disconnect();
+            loadFn(container);
+          }
+        });
+      }, { rootMargin: "200px" });
+      observer.observe(container);
+
+      if (container.getBoundingClientRect().top < window.innerHeight + 200) {
+        observer.disconnect();
+        loadFn(container);
       }
     }
 
+    // --- Facebook ---
+    function loadFacebook(container) {
+      if (_socialLoaded.fb) return;
+      _socialLoaded.fb = true;
+
+      if (window.FB && FB.XFBML) {
+        try { FB.XFBML.parse(); } catch(e) {}
+      } else {
+        var pending = function() {
+          try { FB.init({ xfbml: true, version: "v19.0" }); } catch(e) {}
+        };
+        if (!window._fbAsyncInitOverridden) {
+          window._fbAsyncInitOverridden = true;
+          var orig = window.fbAsyncInit;
+          window.fbAsyncInit = function() {
+            if (orig) try { orig(); } catch(e) {}
+            pending();
+          };
+        }
+        if (!document.querySelector('script[src*="connect.facebook.net"]')) {
+          var s = document.createElement("script");
+          s.src = "https://connect.facebook.net/en_US/sdk.js";
+          s.async = true;
+          s.onload = function() {
+            if (window.FB && FB.XFBML) { try { FB.XFBML.parse(); } catch(e) {} }
+          };
+          document.head.appendChild(s);
+        }
+      }
+      waitForIframe(container);
+    }
+
+    // --- Instagram ---
+    function loadInstagram(container) {
+      if (_socialLoaded.ig) return;
+      _socialLoaded.ig = true;
+
+      if (window.instgrm && window.instgrm.Embeds) {
+        try { window.instgrm.Embeds.process(); } catch(e) {}
+      } else if (!document.querySelector('script[src*="instagram.com/embed.js"]')) {
+        var s = document.createElement("script");
+        s.src = "https://www.instagram.com/embed.js";
+        s.async = true;
+        document.head.appendChild(s);
+      }
+      waitForIframe(container);
+    }
+
+    // --- TikTok ---
+    function loadTikTok(container) {
+      if (_socialLoaded.tt) return;
+      _socialLoaded.tt = true;
+
+      if (window.tiktok && window.tiktok.embed) {
+        try { window.tiktok.embed(); } catch(e) {}
+      } else if (!document.querySelector('script[src*="tiktok.com/embed.js"]')) {
+        var s = document.createElement("script");
+        s.src = "https://www.tiktok.com/embed.js";
+        s.async = true;
+        s.onload = function() {
+          if (window.tiktok && window.tiktok.embed) {
+            try { window.tiktok.embed(); } catch(e) {}
+          }
+        };
+        document.head.appendChild(s);
+      }
+      waitForIframe(container);
+    }
+
     document.addEventListener("astro:page-load", function() {
-      setTimeout(loadSocialEmbeds, 150);
+      _socialLoaded = { fb: false, ig: false, tt: false };
+      initEmbed("fb-page-plugin", loadFacebook);
+      initEmbed("ig-container", loadInstagram);
+      initEmbed("tt-container", loadTikTok);
     });
   </script>
 </BaseLayout>

@@ -74,6 +74,35 @@
     }
 }
 
+/* Skeleton loading for social embeds */
+.skeleton {
+    background: linear-gradient(90deg, #cbd5e1 25%, #f1f5f9 50%, #cbd5e1 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.2s ease-in-out infinite;
+    border-radius: 0.5rem;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Prevent horizontal overflow from social embeds loading */
+html {
+    overflow-x: hidden;
+}
+
+/* Instagram embed races — force max-width so the generated iframe stays bounded */
+.instagram-media,
+.instagram-media iframe {
+    max-width: 100% !important;
+    min-width: unset !important;
+}
+
 /* Keep header stable */
 .header {
     view-transition-name: header;
