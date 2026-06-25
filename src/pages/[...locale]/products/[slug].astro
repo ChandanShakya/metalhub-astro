@@ -1,7 +1,7 @@
 ---
-import { Image } from "astro:assets";
 import { getCollection } from "astro:content";
 import AttributeSelector from "../../../components/AttributeSelector.astro";
+import OptimizedImage from "../../../components/OptimizedImage.astro";
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { getTranslations, locales } from "../../../lib/i18n";
 
@@ -47,7 +47,7 @@ const schemaJson = JSON.stringify({
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-12">
       <div>
         <div id="main-image-wrapper" class="relative rounded-xl overflow-hidden bg-linear-to-br from-surface-3 to-border cursor-zoom-in" data-product-images={JSON.stringify(productImages)}>
-          <Image id="main-image" src={productImages[0]} alt={productName} class="w-full aspect-square object-cover transition-transform duration-500 hover:scale-[1.02]" width={800} height={800} loading="eager" decoding="sync" />
+          <OptimizedImage id="main-image" src={productImages[0]} alt={productName} class="w-full aspect-square object-cover transition-transform duration-500 hover:scale-[1.02]" width={800} height={800} loading="eager" decoding="sync" />
         </div>
 
         <div class="relative mt-3">
@@ -55,7 +55,7 @@ const schemaJson = JSON.stringify({
           <div id="gallery-track" class="flex gap-2 overflow-x-auto pb-1 scroll-smooth px-10">
             {productImages.map((img, i) => (
               <button class="gallery-thumb shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 border-border transition-[colors,transform] hover:border-accent cursor-pointer relative group" data-image={img} data-index={String(i)}>
-                <Image src={img} alt={productName + " " + (i + 1)} class="w-full h-full object-cover" width={200} height={200} />
+                <OptimizedImage src={img} alt={productName + " " + (i + 1)} class="w-full h-full object-cover" width={200} height={200} />
                 <span class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                   <svg class="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                 </span>
@@ -116,7 +116,7 @@ const schemaJson = JSON.stringify({
       <button id="share-close" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center text-text-3 hover:text-text-1 rounded-full hover:bg-surface-3 transition-colors cursor-pointer" aria-label="Close">&times;</button>
       <h3 class="text-lg font-bold mb-4">{t("share.title")}</h3>
       <div class="flex items-center gap-3 mb-5">
-        <Image id="share-preview-img" src={productImages[0]} alt={productName} class="w-16 h-16 rounded-lg object-cover" width={64} height={64} />
+        <OptimizedImage id="share-preview-img" src={productImages[0]} alt={productName} class="w-16 h-16 rounded-lg object-cover" width={64} height={64} />
         <div>
           <p class="font-semibold text-sm">{productName}</p>
           <p class="text-accent-dark font-bold text-sm">NPR {product.data.basePrice.toLocaleString()}</p>
