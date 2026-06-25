@@ -57,6 +57,18 @@ const t = await getTranslations(locale);
       var leafletModule = await import("leaflet");
       await import("leaflet-control-geocoder");
       var L = leafletModule.default || leafletModule;
+      // Set marker icon URLs using Vite-processed imports so images resolve
+      // correctly on Cloudflare (dynamic import breaks Leaflet's auto-detection).
+      // Vite dev returns {src,width,height,format}, Vite build returns the URL string directly.
+      var iconDef = await import("leaflet/dist/images/marker-icon.png");
+      var retinaDef = await import("leaflet/dist/images/marker-icon-2x.png");
+      var shadowDef = await import("leaflet/dist/images/marker-shadow.png");
+      var imgUrl = function(m) { return typeof m.default === "string" ? m.default : m.default.src; };
+      L.Icon.Default.mergeOptions({
+        iconUrl: imgUrl(iconDef),
+        iconRetinaUrl: imgUrl(retinaDef),
+        shadowUrl: imgUrl(shadowDef),
+      });
       window.L = L;
       initMap(mapEl, statusEl, uiText, L);
     } catch (e) {
