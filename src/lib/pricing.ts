@@ -1,10 +1,10 @@
-export interface PriceDiscount {
+interface PriceDiscount {
     active: boolean;
     type: "percentage" | "flat";
     value: number;
 }
 
-export interface PriceResult {
+interface PriceResult {
     basePrice: number;
     discountedPrice: number;
     originalPrice: number;

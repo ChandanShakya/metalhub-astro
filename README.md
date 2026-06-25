@@ -90,7 +90,7 @@ bun run astro check
     ├── content/
     │   ├── categories/             # Category markdown files (managed via CMS)
     │   ├── products/               # Product markdown files (managed via CMS)
-    │   ├── i18n/                   # CMS-managed translation overrides
+    │   └── i18n/                   # CMS-managed translation markdown files
     │   └── settings/
     │       └── site.json           # WhatsApp number + Messenger page username
     │
@@ -103,10 +103,6 @@ bun run astro check
     │   ├── OrderButtons.astro      # WhatsApp + Messenger order message builder with product links
     │   └── ProductCard.astro       # Product card with discount display
     │
-    ├── i18n/
-    │   ├── en.json                 # English UI dictionary
-    │   ├── ne.json                 # Nepali UI dictionary
-    │   └── newa.json               # Newari UI dictionary (displayed in Ranjana script)
     │
     ├── layouts/
     │   └── BaseLayout.astro        # HTML shell, OG tags, ClientRouter, Header + Footer

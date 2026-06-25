@@ -1,12 +1,6 @@
-import en from "../i18n/en.json";
-import ne from "../i18n/ne.json";
-import newa from "../i18n/newa.json";
-
-const dictionaries = { en, ne, newa } as const;
-
-export type Locale = keyof typeof dictionaries;
-
 export const locales = ["en", "ne", "newa"] as const;
+
+export type Locale = (typeof locales)[number];
 
 export function localizedPath(path: string, locale: Locale): string {
     if (locale === "en") return path;
@@ -15,7 +9,7 @@ export function localizedPath(path: string, locale: Locale): string {
 
 let cmsTranslations: Record<string, Record<string, string>> | null = null;
 
-export async function loadCMSTranslations(): Promise<Record<string, Record<string, string>>> {
+async function loadTranslations(): Promise<Record<string, Record<string, string>>> {
     if (cmsTranslations) return cmsTranslations;
     try {
         const { getCollection } = await import("astro:content");
@@ -33,21 +27,15 @@ export async function loadCMSTranslations(): Promise<Record<string, Record<strin
         }
         return cmsTranslations || {};
     } catch (err) {
-        console.error("Failed to load CMS translations:", err);
+        console.error("Failed to load translations:", err);
         return {};
     }
 }
 
-export type LocalizedString = Record<Locale, string>;
-
-export function localizedValue(value: LocalizedString | undefined, locale: Locale): string {
-    if (!value) return "";
-    return value[locale] || value.en;
-}
-
-export function getTranslations(locale: Locale) {
-    const dict = dictionaries[locale] || dictionaries.en;
+export async function getTranslations(locale: Locale) {
+    const cms = await loadTranslations();
+    const dict = cms[locale] || cms.en;
     return (key: string): string => {
-        return (dict as Record<string, string>)[key] || key;
+        return dict[key] || key;
     };
 }

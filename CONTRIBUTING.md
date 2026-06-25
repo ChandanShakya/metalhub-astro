@@ -148,21 +148,27 @@ Attribute names and option labels are stored as `{en, ne, newa}` objects for tra
 
 ### UI Translations
 
-All static UI text (buttons, labels, headings) is in JSON dictionaries:
+All static UI text (buttons, labels, headings) is in CMS-managed markdown files:
 
-- `src/i18n/en.json` — English
-- `src/i18n/ne.json` — Nepali
-- `src/i18n/newa.json` — Newari (written in Devanagari, displayed in Ranjana script)
+- `src/content/i18n/*.md` — Each file contains a single translation key with values for all 3 locales
 
 ### Adding a New Translation Key
 
-1. Add the key to all 3 JSON files
+1. Create a new `.md` file in `src/content/i18n/` with the key and locale values:
+   ```yaml
+   ---
+   key: my.newKey
+   en: "English text"
+   ne: "नेपाली पाठ"
+   newa: "नेवारी पाठ"
+   ---
+   ```
 2. Use it in components via the translation function:
    ```astro
    ---
    import { getTranslations } from "../lib/i18n";
    const { locale } = Astro.props;
-   const t = getTranslations(locale);
+   const t = await getTranslations(locale);
    ---
    <p>{t("my.newKey")}</p>
    ```

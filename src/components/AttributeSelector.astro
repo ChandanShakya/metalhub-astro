@@ -23,11 +23,22 @@ interface Props {
     productImage?: string;
 }
 const { attributes, locale, basePrice, productSlug, productName, productNameAll, productImage } = Astro.props;
-const t = getTranslations(locale);
+const t = await getTranslations(locale);
 const checkoutPath = locale === "en" ? "/checkout/" : `/${locale}/checkout/`;
 
 function localize(obj: LocalizedString): string {
     return obj[locale] || obj.en;
+}
+
+const allAttributeLabels: Record<string, Record<string, string>> = {};
+for (const loc of ["en", "ne", "newa"] as const) {
+    allAttributeLabels[loc] = {};
+    for (const attr of attributes) {
+        allAttributeLabels[loc][attr.name.en] = attr.name[loc] || attr.name.en;
+        for (const opt of attr.options) {
+            allAttributeLabels[loc][opt.label.en] = opt.label[loc] || opt.label.en;
+        }
+    }
 }
 ---
 
@@ -77,6 +88,7 @@ function localize(obj: LocalizedString): string {
     data-product-name={productName}
     data-product-name-all={JSON.stringify(productNameAll)}
     data-product-image={productImage}
+    data-attribute-labels={JSON.stringify(allAttributeLabels)}
     data-ui-text={JSON.stringify({ added: t("products.added"), addToCart: t("products.addToCart"), percentOff: t("products.percentOff"), amountOff: t("products.amountOff") })}
     disabled
   >
@@ -158,6 +170,11 @@ function localize(obj: LocalizedString): string {
       if (selected) options[name] = selected.getAttribute("data-key");
     });
     return options;
+  }
+
+  function getAllOptionLabels() {
+    var raw = document.getElementById("add-to-cart-btn")?.getAttribute("data-attribute-labels") || "{}";
+    try { return JSON.parse(raw); } catch { return {}; }
   }
 
   function getSelectedModifiers() {
@@ -319,6 +336,7 @@ function localize(obj: LocalizedString): string {
       var result = calculatePrice(basePrice);
       var cart = getCart();
       var options = getSelectedOptions();
+      var allLabels = getAllOptionLabels();
       var modifiers = getSelectedModifiers();
 
       var existing = cart.findIndex(function(c) {
@@ -335,6 +353,7 @@ function localize(obj: LocalizedString): string {
           image: productImage,
           images: getSelectedImages(),
           selectedOptions: options,
+          selectedOptionsLabelsAll: allLabels,
           selectedModifiers: modifiers,
           unitPrice: result.price,
           originalUnitPrice: result.original,

@@ -13,7 +13,7 @@ export function getStaticPaths() {
 }
 
 const { locale } = Astro.props;
-const t = getTranslations(locale);
+const t = await getTranslations(locale);
 
 const PER_PAGE = 9;
 

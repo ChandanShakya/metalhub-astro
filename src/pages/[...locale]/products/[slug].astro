@@ -20,7 +20,7 @@ export async function getStaticPaths() {
 }
 
 const { product, locale } = Astro.props;
-const t = getTranslations(locale);
+const t = await getTranslations(locale);
 const productName = product.data.name[locale as keyof typeof product.data.name] || product.data.name.en;
 const description =
     product.data.description[locale as keyof typeof product.data.description] || product.data.description.en;
