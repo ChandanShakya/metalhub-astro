@@ -24,7 +24,7 @@
         "@astrojs/cloudflare": "^14.0.0",
         "@astrojs/sitemap": "^3.7.3",
         "@tailwindcss/vite": "^4.3.1",
-        "astro": "^7.0.0",
+        "astro": "^7.0.2",
         "leaflet": "^1.9.4",
         "leaflet-control-geocoder": "^3.3.1",
         "tailwindcss": "^4.3.1"
