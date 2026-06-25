@@ -96,12 +96,19 @@ const t = await getTranslations(locale);
     var geocoder = L.Control.Geocoder.nominatim({
       geocodingQueryParams: { countrycodes: "np" }
     });
-    new L.Control.Geocoder({
+    var geocoderControl = new L.Control.Geocoder({
       geocoder: geocoder,
       position: "topright",
       placeholder: uiText.searchPlaceholder,
-      defaultMarkGeocode: true
+      defaultMarkGeocode: false
     }).addTo(map);
+
+    geocoderControl.on("markgeocode", function(e) {
+      if (e.geocode && e.geocode.center) {
+        setMarker(e.geocode.center);
+        map.setView(e.geocode.center, 16);
+      }
+    });
 
     var LocateControl = L.Control.extend({
       options: { position: "topleft" },
@@ -131,13 +138,6 @@ const t = await getTranslations(locale);
       }
     });
     map.addControl(new LocateControl());
-
-    map.on("geocoder-markgeocode", function(e) {
-      if (e.geocode && e.geocode.center) {
-        setMarker(e.geocode.center);
-        map.setView(e.geocode.center, 16);
-      }
-    });
 
     var marker = null;
 
