@@ -21,6 +21,7 @@ node_modules/
 .idea/
 
 # AI agent files
+.agents/
 AGENTS.md
 CLAUDE.md
 CLAUDE.local.md
@@ -31,3 +32,4 @@ CLAUDE.local.md
 .dev.vars*
 !.dev.vars.example
 !.env.example
+

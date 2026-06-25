@@ -13,7 +13,7 @@
         "check": "astro check && biome check .",
         "prepare": "husky",
         "generate-types": "wrangler types",
-        "deploy": "bun run build && wrangler pages deploy dist/client --project-name=metalhub --no-config"
+        "deploy": "bun run build && rm -rf .wrangler/deploy && wrangler pages deploy dist/client --project-name=metalhub --no-config"
     },
     "lint-staged": {
         "*.{astro,ts,js,json,css}": [
