@@ -1,9 +1,9 @@
 ---
-slug: copper
 name:
-  en: "Copper"
-  ne: "तामा"
-  newa: "तामा"
-icon: "\U0001FA99"
+  en: Copper
+  ne: तामा
+  newa: तामा
+slug: copper
+icon: 🏺
 order: 2
 ---
