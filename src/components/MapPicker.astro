@@ -24,6 +24,8 @@ const t = await getTranslations(locale);
 <input type="hidden" id="delivery-lng" />
 
 <script>
+  import type * as leaflet from "leaflet";
+
   var STORAGE_KEY = "metalhub-customer";
 
   function loadCustomer() {
@@ -44,15 +46,15 @@ const t = await getTranslations(locale);
     var observer = new IntersectionObserver(function(entries) {
       if (entries[0].isIntersecting) {
         observer.disconnect();
-        mapEl.dataset.initialized = "true";
+        mapEl!.dataset.initialized = "true";
         // Lazy-load leaflet from the Vite-bundled chunk (minified, tree-shaken)
-        loadMap(mapEl, statusEl, uiText);
+        loadMap(mapEl!, statusEl!, uiText);
       }
     }, { rootMargin: "200px" });
     observer.observe(mapEl);
   });
 
-  async function loadMap(mapEl, statusEl, uiText) {
+  async function loadMap(mapEl: HTMLElement, statusEl: HTMLElement, uiText: Record<string, string>) {
     try {
       var leafletModule = await import("leaflet");
       await import("leaflet-control-geocoder");
@@ -63,7 +65,7 @@ const t = await getTranslations(locale);
       var iconDef = await import("leaflet/dist/images/marker-icon.png");
       var retinaDef = await import("leaflet/dist/images/marker-icon-2x.png");
       var shadowDef = await import("leaflet/dist/images/marker-shadow.png");
-      var imgUrl = function(m) { return typeof m.default === "string" ? m.default : m.default.src; };
+      var imgUrl = function(m: { default: string | { src: string } }) { return typeof m.default === "string" ? m.default : m.default.src; };
       L.Icon.Default.mergeOptions({
         iconUrl: imgUrl(iconDef),
         iconRetinaUrl: imgUrl(retinaDef),
@@ -77,10 +79,10 @@ const t = await getTranslations(locale);
     }
   }
 
-  function initMap(mapEl, statusEl, uiText, L) {
+  function initMap(mapEl: HTMLElement, statusEl: HTMLElement, uiText: Record<string, string>, L: typeof import("leaflet")) {
     var saved = loadCustomer();
     var hasSaved = saved.lat && saved.lng;
-    var center = hasSaved ? [parseFloat(saved.lat), parseFloat(saved.lng)] : [27.7172, 85.3240];
+    var center: [number, number] = hasSaved ? [parseFloat(saved.lat), parseFloat(saved.lng)] : [27.7172, 85.3240];
     var zoom = hasSaved ? 14 : 12;
     var map = L.map(mapEl).setView(center, zoom);
 
@@ -90,20 +92,21 @@ const t = await getTranslations(locale);
       attribution: "\u00a9 <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a>"
     }).addTo(map);
 
-    var geocoder = L.Control.Geocoder.nominatim({
+    var LControl = L.Control as any;
+    var geocoder = LControl.Geocoder.nominatim({
       geocodingQueryParams: { countrycodes: "np" }
     });
-    var geocoderControl = new L.Control.Geocoder({
+    var geocoderControl = new LControl.Geocoder({
       geocoder: geocoder,
       position: "topright",
       placeholder: uiText.searchPlaceholder,
       defaultMarkGeocode: false,
-      formatGeocode: function(result) {
+      formatGeocode: function(result: { name?: string }) {
         return result.name || "";
       }
     }).addTo(map);
 
-    geocoderControl.on("markgeocode", function(e) {
+    geocoderControl.on("markgeocode", function(e: { geocode: { center: leaflet.LatLng } }) {
       if (e.geocode && e.geocode.center) {
         setMarker(e.geocode.center);
         map.setView(e.geocode.center, 16);
@@ -139,14 +142,14 @@ const t = await getTranslations(locale);
     });
     map.addControl(new LocateControl());
 
-    var marker = null;
+    var marker: leaflet.Marker | null = null;
 
-    function setMarker(latlng) {
+    function setMarker(latlng: leaflet.LatLng) {
       if (marker) map.removeLayer(marker);
       marker = L.marker(latlng).addTo(map);
 
-      var input = document.getElementById("delivery-lat");
-      var inputLng = document.getElementById("delivery-lng");
+      var input = document.getElementById("delivery-lat") as HTMLInputElement | null;
+      var inputLng = document.getElementById("delivery-lng") as HTMLInputElement | null;
       if (input) input.value = String(latlng.lat);
       if (inputLng) inputLng.value = String(latlng.lng);
 
@@ -160,6 +163,6 @@ const t = await getTranslations(locale);
     }
 
     if (hasSaved) setMarker(L.latLng(center[0], center[1]));
-    map.on("click", function(e) { setMarker(e.latlng); });
+    map.on("click", function(e: leaflet.LeafletMouseEvent) { setMarker(e.latlng); });
   }
 </script>

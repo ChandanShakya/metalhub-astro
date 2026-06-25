@@ -10,7 +10,7 @@
  * Skips regeneration when all outputs exist and are newer than the source.
  */
 
-import { readdirSync, statSync, existsSync, mkdirSync } from "fs";
+import { readdirSync, statSync, existsSync } from "fs";
 import { join, extname, parse } from "path";
 import sharp from "sharp";
 
