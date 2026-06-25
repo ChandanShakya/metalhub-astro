@@ -2,6 +2,11 @@
 import type { Locale } from "../lib/i18n";
 import { getTranslations } from "../lib/i18n";
 
+// Leaflet CSS is bundled here at build time (no extra CDN request).
+// JS is lazy-loaded via dynamic import() when the map scrolls into view.
+import "leaflet/dist/leaflet.css";
+import "leaflet-control-geocoder/dist/Control.Geocoder.css";
+
 interface Props {
     locale: Locale;
 }
@@ -18,7 +23,7 @@ const t = await getTranslations(locale);
 <input type="hidden" id="delivery-lat" />
 <input type="hidden" id="delivery-lng" />
 
-<script is:inline>
+<script>
   var STORAGE_KEY = "metalhub-customer";
 
   function loadCustomer() {
@@ -27,32 +32,6 @@ const t = await getTranslations(locale);
 
   function getUiText() {
     try { return JSON.parse(document.getElementById("map")?.getAttribute("data-ui-text") || "{}"); } catch { return {}; }
-  }
-
-  function loadCSS(href) {
-    if (!document.querySelector('link[href="' + href + '"]')) {
-      var link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.href = href;
-      document.head.appendChild(link);
-    }
-  }
-
-  function loadJS(src, callback, errCallback) {
-    if (window.L && src.indexOf("leaflet@") > -1 && src.indexOf("Control.Geocoder") === -1) { callback(); return; }
-    if (document.querySelector('script[src="' + src + '"]')) {
-      var check = setInterval(function() {
-        if (src.indexOf("Control.Geocoder") > -1 && window.L && window.L.Control && window.L.Control.Geocoder) { clearInterval(check); callback(); }
-        else if (src.indexOf("leaflet@") > -1 && src.indexOf("Control.Geocoder") === -1 && window.L) { clearInterval(check); callback(); }
-      }, 100);
-      setTimeout(function() { clearInterval(check); if (errCallback) errCallback(); }, 10000);
-      return;
-    }
-    var script = document.createElement("script");
-    script.src = src;
-    script.onload = callback;
-    script.onerror = function() { if (errCallback) errCallback(); };
-    document.head.appendChild(script);
   }
 
   document.addEventListener("astro:page-load", function() {
@@ -66,26 +45,27 @@ const t = await getTranslations(locale);
       if (entries[0].isIntersecting) {
         observer.disconnect();
         mapEl.dataset.initialized = "true";
-        loadCSS("https://unpkg.com/leaflet@1.9.4/dist/leaflet.css");
-        loadCSS("https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.css");
-        loadJS("https://unpkg.com/leaflet@1.9.4/dist/leaflet.js", function() {
-          loadJS("https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.js", function() {
-            initMap(mapEl, statusEl, uiText);
-          }, function() {
-            statusEl.textContent = uiText.loadErr;
-            statusEl.classList.add("text-sale");
-          });
-        }, function() {
-          statusEl.textContent = uiText.loadErr;
-          statusEl.classList.add("text-sale");
-        });
+        // Lazy-load leaflet from the Vite-bundled chunk (minified, tree-shaken)
+        loadMap(mapEl, statusEl, uiText);
       }
     }, { rootMargin: "200px" });
     observer.observe(mapEl);
   });
 
-  function initMap(mapEl, statusEl, uiText) {
-    var L = window.L;
+  async function loadMap(mapEl, statusEl, uiText) {
+    try {
+      var leafletModule = await import("leaflet");
+      await import("leaflet-control-geocoder");
+      var L = leafletModule.default || leafletModule;
+      window.L = L;
+      initMap(mapEl, statusEl, uiText, L);
+    } catch (e) {
+      statusEl.textContent = uiText.loadErr;
+      statusEl.classList.add("text-sale");
+    }
+  }
+
+  function initMap(mapEl, statusEl, uiText, L) {
     var saved = loadCustomer();
     var hasSaved = saved.lat && saved.lng;
     var center = hasSaved ? [parseFloat(saved.lat), parseFloat(saved.lng)] : [27.7172, 85.3240];
