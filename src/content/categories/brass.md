@@ -4,6 +4,6 @@ name:
   ne: ब्रास
   newa: पित्तल
 slug: brass
-icon: ⚱️
+icon: 🟡
 order: 1
 ---
