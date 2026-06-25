@@ -3,12 +3,7 @@
     "compatibility_date": "2026-06-24",
     "compatibility_flags": ["global_fetch_strictly_public"],
     "name": "metal-hub-site",
-    "main": "@astrojs/cloudflare/entrypoints/server",
     "pages_build_output_dir": "./dist/client",
-    "assets": {
-        "directory": "./dist/client",
-        "binding": "ASSETS"
-    },
     "observability": {
         "enabled": true
     }
