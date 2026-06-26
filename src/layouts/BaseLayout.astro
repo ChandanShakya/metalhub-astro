@@ -3,7 +3,7 @@ import { ClientRouter } from "astro:transitions";
 import Footer from "../components/Footer.astro";
 import Header from "../components/Header.astro";
 import WhatsAppFloating from "../components/WhatsAppFloating.astro";
-import type { Locale } from "../lib/i18n";
+import { getTranslations, type Locale } from "../lib/i18n";
 import "../styles/global.css";
 
 interface Props {
@@ -19,6 +19,7 @@ const {
     description = "Handcrafted copper, brass & bronze kitchenware from Kathmandu",
     image,
 } = Astro.props;
+const t = await getTranslations(locale);
 const currentPath = Astro.url.pathname;
 
 const siteUrl = "https://metalhub.com.np";
@@ -35,9 +36,9 @@ const ogImage = image || `${siteUrl}/og-default.jpg`;
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{title} — Metal Hub</title>
+    <title>{title} — {t("site.name")}</title>
     <meta name="description" content={description} />
-    <meta property="og:title" content={`${title} — Metal Hub`} />
+    <meta property="og:title" content={`${title} — ${t("site.name")}`} />
     <meta property="og:type" content="website" />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={pageUrl} />

@@ -12,8 +12,8 @@ const t = await getTranslations(locale);
 
 <footer class="bg-text-1 text-white/70 text-center py-8 px-4">
   <div class="mx-auto max-w-site">
-    <PaymentBadges />
-    <p class="my-0.5 text-sm mt-4">Metal Hub &copy; {new Date().getFullYear()} &mdash; {t("footer.madeIn")}</p>
+    <PaymentBadges t={t} />
+    <p class="my-0.5 text-sm mt-4">{t("site.name")} &copy; {new Date().getFullYear()} &mdash; {t("footer.madeIn")}</p>
     <p class="my-0.5 text-sm">{t("footer.rights")}</p>
   </div>
 </footer>

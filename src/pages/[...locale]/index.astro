@@ -67,9 +67,9 @@ function getFeaturedPriceRange(product: (typeof products)[number]) {
   <section class="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700 text-white">
     <div class="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgb(180_83_9/0.12),transparent_50%),radial-gradient(circle_at_80%_70%,rgb(217_119_6/0.08),transparent_40%)]"></div>
     <div class="relative container mx-auto px-4 py-14 md:py-20 text-center">
-      <p class="text-accent-light text-sm font-semibold uppercase tracking-widest mb-3">Metal Hub Nepal</p>
-      <h1 class="text-3xl md:text-5xl font-extrabold mb-3 tracking-tight">Handcrafted Metalware<br class="hidden sm:inline"><span class="text-accent-light"> from Kathmandu</span></h1>
-      <p class="text-base md:text-lg text-white/75 mb-8 max-w-xl mx-auto">Pure copper, brass &amp; bronze — kitchenware, puja items, statues and gifts, hand-finished by skilled artisans.</p>
+      <p class="text-accent-light text-sm font-semibold uppercase tracking-widest mb-3">{t("hero.badge")}</p>
+      <h1 class="text-3xl md:text-5xl font-extrabold mb-3 tracking-tight">{t("hero.title")}<br class="hidden sm:inline"><span class="text-accent-light"> {t("hero.titleHighlight")}</span></h1>
+      <p class="text-base md:text-lg text-white/75 mb-8 max-w-xl mx-auto">{t("hero.subtitle")}</p>
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 max-w-2xl mx-auto">
         {sortedCategories.map((cat) => (
           <a
@@ -84,7 +84,7 @@ function getFeaturedPriceRange(product: (typeof products)[number]) {
       </div>
       {sortedMaterials.length > 0 && (
         <div class="mt-6 pt-5 border-t border-white/15">
-          <p class="text-white/50 text-xs uppercase tracking-widest font-semibold mb-3">Browse by Material</p>
+          <p class="text-white/50 text-xs uppercase tracking-widest font-semibold mb-3">{t("hero.browseBy")}</p>
           <div class="grid grid-cols-3 gap-2.5 max-w-sm mx-auto">
             {sortedMaterials.map((mat) => (
               <a
@@ -106,8 +106,8 @@ function getFeaturedPriceRange(product: (typeof products)[number]) {
     <section class="py-6 container mx-auto px-4">
       <div class="flex items-baseline justify-between mb-4">
         <div>
-          <h2 class="text-xl md:text-2xl font-bold">Festival Special — Limited Time</h2>
-          <p class="text-text-3 text-xs md:text-sm mt-0.5">Handpicked deals on premium metalware</p>
+          <h2 class="text-xl md:text-2xl font-bold">{t("section.deals.title")}</h2>
+          <p class="text-text-3 text-xs md:text-sm mt-0.5">{t("section.deals.subtitle")}</p>
         </div>
       </div>
       <div class="flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar pb-2 -mx-4 px-4">
@@ -118,7 +118,7 @@ function getFeaturedPriceRange(product: (typeof products)[number]) {
           >
             <div class="relative">
               <OptimizedImage src={item.product.image || "/images/products/placeholder.jpg"} alt={localizeName(item.product.name)} class="w-full h-36 md:h-44 object-contain bg-gradient-to-br from-surface-3 to-border" width={300} height={225} sizes="256px" />
-              <span class="absolute top-2 left-2 bg-sale text-white text-[0.6rem] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">Limited Time</span>
+              <span class="absolute top-2 left-2 bg-sale text-white text-[0.6rem] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">{t("badge.limitedTime")}</span>
             </div>
             <div class="p-3 md:p-4">
               <div class="text-[0.65rem] text-accent font-semibold uppercase tracking-wide mb-0.5">{getCategoryName(item.product.category)}</div>
@@ -168,7 +168,7 @@ function getFeaturedPriceRange(product: (typeof products)[number]) {
                 <div class="text-[0.65rem] text-accent font-semibold uppercase tracking-wide mb-0.5">{materialName}</div>
                 <h3 class="text-sm md:text-base font-semibold leading-tight mb-1">{localizeName(product.data.name)}</h3>
                 <div class="mt-auto font-bold text-sm md:text-base text-accent-dark">
-                  {hasVariants && <span class="text-text-3 font-normal text-xs">from </span>}
+                  {hasVariants && <span class="text-text-3 font-normal text-xs">{t("price.from")}</span>}
                   NPR {priceInfo.minWithDiscount.toLocaleString()}
                   {priceInfo.hasDiscount && (
                     <>
