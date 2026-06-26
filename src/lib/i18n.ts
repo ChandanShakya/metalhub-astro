@@ -33,6 +33,10 @@ async function loadTranslations(): Promise<Record<string, Record<string, string>
     }
 }
 
+export function localizeName(obj: Record<string, string> | undefined | null, locale: string): string {
+    return obj?.[locale] || obj?.en || "";
+}
+
 export async function getTranslations(locale: Locale) {
     const cms = await loadTranslations();
     const dict = cms[locale] || cms.en;

@@ -320,34 +320,3 @@ export function getProductPriceRange(
         cheapestVariantParams: cheapestVariant ? buildVariantParams(cheapestVariant.attributeValues) : "",
     };
 }
-
-// Legacy — kept for backward compat
-export function calculatePrice(
-    basePrice: number,
-    _selectedModifiers: number[],
-    productDiscount: PriceDiscount,
-    _optionDiscounts: (PriceDiscount | undefined)[],
-): PriceResult {
-    if (productDiscount.active) {
-        const discounted = applyDiscount(basePrice, productDiscount);
-        const label =
-            productDiscount.type === "percentage"
-                ? `${productDiscount.value}% off`
-                : `NPR ${productDiscount.value} off`;
-        return {
-            basePrice,
-            discountedPrice: discounted,
-            originalPrice: basePrice,
-            hasDiscount: true,
-            discountLabel: label,
-        };
-    }
-
-    return {
-        basePrice,
-        discountedPrice: basePrice,
-        originalPrice: basePrice,
-        hasDiscount: false,
-        discountLabel: "",
-    };
-}

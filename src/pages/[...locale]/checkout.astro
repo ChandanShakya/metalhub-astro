@@ -75,12 +75,20 @@ const settings = settingsEntries[0]?.data || { whatsappNumber: "9779861760709", 
       if (phoneEl && data.phone) (phoneEl as HTMLInputElement).value = data.phone;
     }
 
+    window.__checkoutCtx = window.__checkoutCtx || { id: 0, abort: null };
+    const _checkoutId = ++window.__checkoutCtx.id;
+
     document.addEventListener("astro:page-load", () => {
+      if (window.__checkoutCtx.id !== _checkoutId) return;
+      if (window.__checkoutCtx.abort) window.__checkoutCtx.abort.abort();
+      window.__checkoutCtx.abort = new AbortController();
+      const signal = window.__checkoutCtx.abort.signal;
+
       restoreFields();
       const nameEl = document.getElementById("customer-name");
       const phoneEl = document.getElementById("customer-phone");
-      nameEl?.addEventListener("input", saveCustomer);
-      phoneEl?.addEventListener("input", saveCustomer);
+      nameEl?.addEventListener("input", saveCustomer, { signal });
+      phoneEl?.addEventListener("input", saveCustomer, { signal });
     });
 
     window.__saveCustomerLocation = saveCustomer;

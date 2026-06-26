@@ -76,7 +76,13 @@ const t = await getTranslations(locale);
     </div>
   </section>
 
-  <script is:inline>
+  <script>
+    import {
+      loadFacebookSDK,
+      loadInstagramSDK,
+      loadTikTokSDK,
+    } from "../../lib/social";
+
     var _socialLoaded = { fb: false, ig: false, tt: false };
 
     function hideSkeleton(container) {
@@ -85,111 +91,57 @@ const t = await getTranslations(locale);
       if (sk) sk.style.display = "none";
     }
 
-    // Load each embed SDK only when its container scrolls into view.
     function initEmbed(elementId, loadFn) {
       var container = document.getElementById(elementId);
       if (!container) return;
 
+      if (container.getBoundingClientRect().top < window.innerHeight + 200) {
+        loadFn(container);
+        return;
+      }
+
       var observer = new IntersectionObserver(function(entries) {
-        entries.forEach(function(entry) {
-          if (entry.isIntersecting) {
-            observer.disconnect();
-            loadFn(container);
-          }
-        });
+        if (entries[0].isIntersecting) {
+          observer.disconnect();
+          loadFn(container);
+        }
       }, { rootMargin: "200px" });
       observer.observe(container);
-
-      if (container.getBoundingClientRect().top < window.innerHeight + 200) {
-        observer.disconnect();
-        loadFn(container);
-      }
     }
 
-    function clearSDK(name) {
-      try { window[name] = undefined; } catch(e) {}
-      try { delete window[name]; } catch(e) {}
-    }
-
-    // --- Facebook ---
     function loadFacebook(container) {
       if (_socialLoaded.fb) return;
       _socialLoaded.fb = true;
-
-      function parse() {
+      loadFacebookSDK(function() {
         requestAnimationFrame(function() {
           try { FB.XFBML.parse(); } catch(e) {}
           hideSkeleton(container);
         });
-      }
-      clearSDK("FB");
-      var old = document.querySelector('script[src*="connect.facebook.net"]');
-      if (old) old.remove();
-      window.fbAsyncInit = function() { try { FB.init({ xfbml: true, version: "v19.0" }); } catch(e) {} };
-      var s = document.createElement("script");
-      s.src = "https://connect.facebook.net/en_US/sdk.js";
-      s.async = true;
-      document.head.appendChild(s);
-      var waited = 0;
-      function poll() {
-        if (window.FB && FB.XFBML) { parse(); return; }
-        if (waited < 50) { waited++; setTimeout(poll, 100); }
-      }
-      poll();
+      });
       setTimeout(function() { hideSkeleton(container); }, 3000);
     }
 
-    // --- Instagram ---
     function loadInstagram(container) {
       if (_socialLoaded.ig) return;
       _socialLoaded.ig = true;
-
-      function process() {
+      loadInstagramSDK(function() {
         requestAnimationFrame(function() {
           try { window.instgrm.Embeds.process(); } catch(e) {}
           hideSkeleton(container);
         });
-      }
-      clearSDK("instgrm");
-      var old = document.querySelector('script[src*="instagram.com/embed.js"]');
-      if (old) old.remove();
-      var s = document.createElement("script");
-      s.src = "https://www.instagram.com/embed.js";
-      s.async = true;
-      document.head.appendChild(s);
-      var waited = 0;
-      function poll() {
-        if (window.instgrm && window.instgrm.Embeds) { process(); return; }
-        if (waited < 50) { waited++; setTimeout(poll, 100); }
-      }
-      poll();
+      });
       setTimeout(function() { hideSkeleton(container); }, 3000);
     }
 
-    // --- TikTok ---
     function loadTikTok(container) {
       if (_socialLoaded.tt) return;
       _socialLoaded.tt = true;
-
-      function embed() {
+      loadTikTokSDK(function() {
         requestAnimationFrame(function() {
           try { window.tiktok.embed(); } catch(e) {}
           hideSkeleton(container);
         });
-      }
-      clearSDK("tiktok");
-      var old = document.querySelector('script[src*="tiktok.com/embed.js"]');
-      if (old) old.remove();
-      var s = document.createElement("script");
-      s.src = "https://www.tiktok.com/embed.js";
-      s.async = true;
-      document.head.appendChild(s);
-      var waited = 0;
-      function poll() {
-        if (window.tiktok && window.tiktok.embed) { embed(); return; }
-        if (waited < 50) { waited++; setTimeout(poll, 100); }
-      }
-      poll();
+      });
       setTimeout(function() { hideSkeleton(container); }, 3000);
     }
 

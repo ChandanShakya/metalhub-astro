@@ -32,7 +32,7 @@ function langHref(langCode: string) {
 const langs = ["en", "ne", "newa"] as const;
 ---
 
-<header class="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-border">
+<header class="header sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-border">
   <div class="mx-auto max-w-site flex items-center justify-between px-4 py-3 md:px-6 md:py-3.5">
     <a href={localizedPath("/", locale)} class="flex items-center gap-2 text-lg font-bold text-text-1 no-underline hover:no-underline" aria-label="Metal Hub Home">
       <picture>
@@ -237,7 +237,7 @@ const langs = ["en", "ne", "newa"] as const;
     return (labels && labels[key]) || key;
   }
 
-    window.__cartRemoveItem = function(index) {
+  window.__cartRemoveItem = function(index) {
     var cart = getCart();
     cart.splice(index, 1);
     saveCart(cart);
@@ -264,16 +264,6 @@ const langs = ["en", "ne", "newa"] as const;
 
   window.__headerCtx = window.__headerCtx || { id: 0, abort: null };
   var _headerId = ++window.__headerCtx.id;
-
-  document.addEventListener("change", function(e) {
-    if (e.target.classList.contains("lang-select")) {
-      var a = document.createElement("a");
-      a.href = e.target.value;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    }
-  });
 
   document.addEventListener("astro:page-load", function() {
     if (window.__headerCtx.id !== _headerId) return;
@@ -348,10 +338,21 @@ const langs = ["en", "ne", "newa"] as const;
         link.addEventListener("click", closeDrawer, { signal: signal });
       });
     }
-  });
-  window.addEventListener("storage", updateCartBadge);
-  window.addEventListener("cart-updated", function() {
-    updateCartBadge();
-    renderCartDropdown();
+
+    document.addEventListener("change", function(e) {
+      if (e.target.classList.contains("lang-select")) {
+        var a = document.createElement("a");
+        a.href = e.target.value;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+    }, { signal: signal });
+
+    window.addEventListener("storage", updateCartBadge, { signal: signal });
+    window.addEventListener("cart-updated", function() {
+      updateCartBadge();
+      renderCartDropdown();
+    }, { signal: signal });
   });
 </script>

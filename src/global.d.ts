@@ -14,7 +14,8 @@ interface Window {
     __orderCtx: AbortControllerCtx;
     __cartCtx: AbortControllerCtx;
     __headerCtx: AbortControllerCtx;
-    __socialLoaded: boolean;
+    __checkoutCtx: AbortControllerCtx;
+    __mapCtx: AbortControllerCtx;
     fbAsyncInit?: () => void;
 }
 

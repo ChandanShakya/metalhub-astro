@@ -14,7 +14,7 @@
     --color-surface-3: #f1f5f9;
     --color-text-1: #0f172a;
     --color-text-2: #475569;
-    --color-text-3: #475569;
+    --color-text-3: #94a3b8;
     --color-border: #e2e8f0;
     --max-w-site: 1200px;
     --perspective-card: 800px;
@@ -24,16 +24,15 @@
     font-family: "Ranjana Lipi", "Noto Sans Devanagari", var(--font-sans);
 }
 
-@layer base {
-    html {
-        scroll-behavior: smooth;
-    }
-    body {
-        @apply min-h-screen flex flex-col;
-    }
-    main {
-        @apply flex-1;
-    }
+html {
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+}
+body {
+    @apply min-h-screen flex flex-col;
+}
+main {
+    @apply flex-1;
 }
 
 /* View transitions */
@@ -91,11 +90,6 @@
     }
 }
 
-/* Prevent horizontal overflow from social embeds loading */
-html {
-    overflow-x: hidden;
-}
-
 /* Instagram embed races — force max-width so the generated iframe stays bounded */
 .instagram-media,
 .instagram-media iframe {
@@ -125,11 +119,6 @@ html {
     font-family: var(--font-sans);
     font-size: 0.85rem;
     padding: 0.4rem 0.6rem;
-}
-
-/* Specs table */
-.specs-table dt {
-    font-weight: 500;
 }
 
 /* Variant selector */

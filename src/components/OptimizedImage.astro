@@ -71,7 +71,7 @@ const fallbackSizes = attrs.width ? `${attrs.width}px` : "100vw";
     hasResponsive ? (
         <picture>
             <source srcset={srcset} sizes={defaultSizes} type="image/webp" />
-            <img src={webpSrc!} alt={alt} {...attrs} sizes={fallbackSizes} />
+            <img src={webpSrc!} alt={alt} {...attrs} sizes={defaultSizes} />
         </picture>
     ) : webpSrc ? (
         // WebP available but no responsive variants (single-size fallback)
