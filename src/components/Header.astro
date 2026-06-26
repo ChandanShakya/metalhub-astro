@@ -35,7 +35,10 @@ const langs = ["en", "ne", "newa"] as const;
 <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-border">
   <div class="mx-auto max-w-site flex items-center justify-between px-4 py-3 md:px-6 md:py-3.5">
     <a href={localizedPath("/", locale)} class="flex items-center gap-2 text-lg font-bold text-text-1 no-underline hover:no-underline" aria-label="Metal Hub Home">
-      <img src="/images/logo.png" alt="Metal Hub" class="h-7 w-auto" />
+      <picture>
+        <source srcset="/images/logo-64w.webp 64w, /images/logo-128w.webp 128w, /images/logo-256w.webp 256w" sizes="28px" type="image/webp" />
+        <img src="/images/logo.png" alt="Metal Hub" class="h-7 w-auto" />
+      </picture>
       Metal Hub
     </a>
 
@@ -91,7 +94,10 @@ const langs = ["en", "ne", "newa"] as const;
 <div id="mobile-drawer" class="hidden fixed top-0 right-0 h-full w-72 max-w-[85vw] z-301 shadow-2xl flex flex-col md:hidden translate-x-full transition-transform duration-200" style="background-color:#fff">
   <div class="flex items-center justify-between px-4 py-3 border-b border-border">
     <a href={localizedPath("/", locale)} class="flex items-center gap-2 text-base font-bold text-text-1 no-underline hover:no-underline" aria-label="Metal Hub Home">
-      <img src="/images/logo.png" alt="Metal Hub" class="h-6 w-auto" />
+        <picture>
+          <source srcset="/images/logo-64w.webp 64w, /images/logo-128w.webp 128w, /images/logo-256w.webp 256w" sizes="24px" type="image/webp" />
+          <img src="/images/logo.png" alt="Metal Hub" class="h-6 w-auto" />
+        </picture>
       Metal Hub
     </a>
     <button id="mobile-drawer-close" class="flex items-center justify-center w-8 h-8 rounded-lg text-text-2 hover:text-accent hover:bg-surface-2 transition-colors cursor-pointer" aria-label="Close menu">

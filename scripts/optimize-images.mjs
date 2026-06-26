@@ -107,6 +107,40 @@ console.log(`Optimizing images in ${ROOT}...\n`);
 console.log(`Responsive widths: ${WIDTHS.join("w, ")}w\n`);
 const all = walk(ROOT);
 await Promise.all(all);
+
+// ── Logo optimization ──────────────────────────────────────────────
+const LOGO_SRC = new URL("../public/images/logo.png", import.meta.url).pathname;
+const LOGO_WIDTHS = [64, 128, 256];
+
+if (existsSync(LOGO_SRC)) {
+    console.log(`\nOptimizing logo...`);
+    const logoDir = parse(LOGO_SRC).dir;
+
+    for (const w of LOGO_WIDTHS) {
+        const outName = `logo-${w}w.webp`;
+        const outPath = join(logoDir, outName);
+        if (existsSync(outPath)) {
+            const srcMtime = statSync(LOGO_SRC).mtimeMs;
+            if (statSync(outPath).mtimeMs >= srcMtime) continue;
+        }
+        await sharp(LOGO_SRC)
+            .resize({ width: w, withoutEnlargement: true })
+            .webp({ quality: 80 })
+            .toFile(outPath);
+        converted++;
+        console.log(`  ✓ logo.png → ${outName}`);
+    }
+
+    const logoFullWebp = join(logoDir, "logo.webp");
+    const logoNeedsFull = !existsSync(logoFullWebp) ||
+        statSync(logoFullWebp).mtimeMs < statSync(LOGO_SRC).mtimeMs;
+    if (logoNeedsFull) {
+        await sharp(LOGO_SRC).webp({ quality: 80 }).toFile(logoFullWebp);
+        converted++;
+        console.log(`  ✓ logo.png → logo.webp`);
+    }
+}
+
 console.log(
     `\nDone: ${converted} generated, ${skipped} up-to-date, ${errors} errors`,
 );
