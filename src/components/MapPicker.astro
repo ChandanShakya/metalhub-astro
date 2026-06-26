@@ -62,8 +62,12 @@ const t = await getTranslations(locale);
 
   async function loadMap(mapEl: HTMLElement, statusEl: HTMLElement, uiText: Record<string, string>) {
     try {
-      await import("leaflet/dist/leaflet.css");
-      await import("leaflet-control-geocoder/dist/Control.Geocoder.css");
+      const [leafletCss, geocoderCss] = await Promise.all([
+        import("leaflet/dist/leaflet.css?inline").then(m => m.default),
+        import("leaflet-control-geocoder/dist/Control.Geocoder.css?inline").then(m => m.default),
+      ]);
+      if (leafletCss) { const s = document.createElement("style"); s.textContent = leafletCss; document.head.appendChild(s); }
+      if (geocoderCss) { const s = document.createElement("style"); s.textContent = geocoderCss; document.head.appendChild(s); }
       var leafletModule = await import("leaflet");
       await import("leaflet-control-geocoder");
       var L = leafletModule.default || leafletModule;

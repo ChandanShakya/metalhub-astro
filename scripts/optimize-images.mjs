@@ -77,10 +77,7 @@ async function processFile(srcPath) {
         }
 
         const quality = qualityForWidth(w);
-        await sharp(srcPath)
-            .resize({ width: w, withoutEnlargement: true })
-            .webp({ quality })
-            .toFile(outPath);
+        await sharp(srcPath).resize({ width: w, withoutEnlargement: true }).webp({ quality }).toFile(outPath);
         return { name: outName, width: w, quality };
     });
 
@@ -89,8 +86,7 @@ async function processFile(srcPath) {
 
     // Also generate the fallback full-size WebP (no resize, lower quality)
     const fullWebp = join(dir, `${name}.webp`);
-    const needsFull = !existsSync(fullWebp) ||
-        statSync(fullWebp).mtimeMs < statSync(srcPath).mtimeMs;
+    const needsFull = !existsSync(fullWebp) || statSync(fullWebp).mtimeMs < statSync(srcPath).mtimeMs;
     if (needsFull) {
         await sharp(srcPath).webp({ quality: 72 }).toFile(fullWebp);
         done.push({ name: `${name}.webp`, width: "full", quality: 72 });
@@ -98,7 +94,7 @@ async function processFile(srcPath) {
 
     converted += done.length;
     if (done.length > 0) {
-        const sizes = done.map((d) => d.width === "full" ? "full" : `${d.width}w`).join(", ");
+        const sizes = done.map((d) => (d.width === "full" ? "full" : `${d.width}w`)).join(", ");
         console.log(`  ✓ ${name}${srcExt} → [${sizes}]`);
     }
 }
@@ -123,17 +119,13 @@ if (existsSync(LOGO_SRC)) {
             const srcMtime = statSync(LOGO_SRC).mtimeMs;
             if (statSync(outPath).mtimeMs >= srcMtime) continue;
         }
-        await sharp(LOGO_SRC)
-            .resize({ width: w, withoutEnlargement: true })
-            .webp({ quality: 80 })
-            .toFile(outPath);
+        await sharp(LOGO_SRC).resize({ width: w, withoutEnlargement: true }).webp({ quality: 80 }).toFile(outPath);
         converted++;
         console.log(`  ✓ logo.png → ${outName}`);
     }
 
     const logoFullWebp = join(logoDir, "logo.webp");
-    const logoNeedsFull = !existsSync(logoFullWebp) ||
-        statSync(logoFullWebp).mtimeMs < statSync(LOGO_SRC).mtimeMs;
+    const logoNeedsFull = !existsSync(logoFullWebp) || statSync(logoFullWebp).mtimeMs < statSync(LOGO_SRC).mtimeMs;
     if (logoNeedsFull) {
         await sharp(LOGO_SRC).webp({ quality: 80 }).toFile(logoFullWebp);
         converted++;
@@ -141,8 +133,6 @@ if (existsSync(LOGO_SRC)) {
     }
 }
 
-console.log(
-    `\nDone: ${converted} generated, ${skipped} up-to-date, ${errors} errors`,
-);
+console.log(`\nDone: ${converted} generated, ${skipped} up-to-date, ${errors} errors`);
 
 if (errors > 0) process.exit(1);
