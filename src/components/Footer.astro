@@ -1,5 +1,6 @@
 ---
 import { getTranslations, type Locale } from "../lib/i18n";
+import PaymentBadges from "./PaymentBadges.astro";
 
 interface Props {
     locale: Locale;
@@ -11,7 +12,8 @@ const t = await getTranslations(locale);
 
 <footer class="bg-text-1 text-white/70 text-center py-8 px-4">
   <div class="mx-auto max-w-site">
-    <p class="my-0.5 text-sm">Metal Hub &copy; {new Date().getFullYear()} &mdash; {t("footer.madeIn")}</p>
+    <PaymentBadges />
+    <p class="my-0.5 text-sm mt-4">Metal Hub &copy; {new Date().getFullYear()} &mdash; {t("footer.madeIn")}</p>
     <p class="my-0.5 text-sm">{t("footer.rights")}</p>
   </div>
 </footer>

@@ -1,3 +1,5 @@
+import { getCollection } from "astro:content";
+
 export const locales = ["en", "ne", "newa"] as const;
 
 export type Locale = (typeof locales)[number];
@@ -12,7 +14,6 @@ let cmsTranslations: Record<string, Record<string, string>> | null = null;
 async function loadTranslations(): Promise<Record<string, Record<string, string>>> {
     if (cmsTranslations) return cmsTranslations;
     try {
-        const { getCollection } = await import("astro:content");
         const entries = await getCollection("i18n");
         cmsTranslations = {};
         for (const entry of entries) {

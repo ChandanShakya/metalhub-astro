@@ -2,6 +2,7 @@
 import { getCollection } from "astro:content";
 import AttributeSelector from "../../../components/AttributeSelector.astro";
 import OptimizedImage from "../../../components/OptimizedImage.astro";
+import ProductSpecs from "../../../components/ProductSpecs.astro";
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { getTranslations, locales } from "../../../lib/i18n";
 
@@ -46,6 +47,9 @@ const schemaJson = JSON.stringify({
 ---
 
 <BaseLayout title={productName} locale={locale} description={description} image={productImages[0]}>
+  <link rel="preconnect" href="https://www.instagram.com" />
+  <link rel="preconnect" href="https://www.tiktok.com" />
+  <link rel="preconnect" href="https://cdn.tiktok.com" />
   <script is:inline type="application/ld+json" set:html={schemaJson} />
   <section class="py-8 container mx-auto px-4">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-12">
@@ -79,12 +83,17 @@ const schemaJson = JSON.stringify({
         </div>
         <p class="text-text-2 mb-6 leading-relaxed">{description}</p>
 
-        <div id="product-discount-data" class="hidden">
-          {JSON.stringify(product.data.discount)}
-        </div>
+        <div id="product-data" class="hidden" data-product={JSON.stringify({
+          discount: product.data.discount,
+          attributeGroups: product.data.attributeGroups,
+          variants: product.data.variants,
+          basePrice: product.data.basePrice,
+          specifications: product.data.specifications,
+        })}></div>
 
         <AttributeSelector
-          attributes={product.data.attributes}
+          attributeGroups={product.data.attributeGroups}
+          variants={product.data.variants}
           locale={locale}
           basePrice={product.data.basePrice}
           productSlug={product.data.slug}
@@ -92,7 +101,16 @@ const schemaJson = JSON.stringify({
           productNameAll={product.data.name}
           productImage={productImages[0]}
         />
+
+        <div id="specs-display" data-locale={locale} class="mt-8">
+          <ProductSpecs specifications={product.data.specifications} locale={locale} />
+        </div>
       </div>
+    </div>
+  </section>
+
+  <section id="product-reviews" class="py-8 container mx-auto px-4 border-t border-border">
+    <div id="review-widget" data-product-id={product.data.slug}>
     </div>
   </section>
 
@@ -305,43 +323,73 @@ const schemaJson = JSON.stringify({
         });
       }
 
+      function clearSDK(name) {
+        try { window[name] = undefined; } catch(e) {}
+        try { delete window[name]; } catch(e) {}
+      }
+
       function loadFacebookSDK() {
-        if (window.FB && FB.XFBML) {
-          try { FB.XFBML.parse(); } catch(e) {}
-        } else if (!document.querySelector('script[src*="connect.facebook.net"]')) {
-          window.fbAsyncInit = function() { try { FB.init({ xfbml: true, version: "v19.0" }); } catch(e) {} };
-          var s = document.createElement("script");
-          s.src = "https://connect.facebook.net/en_US/sdk.js";
-          s.async = true;
-          document.head.appendChild(s);
+        function parse() {
+          requestAnimationFrame(function() {
+            try { FB.XFBML.parse(); } catch(e) {}
+          });
         }
+        clearSDK("FB");
+        var old = document.querySelector('script[src*="connect.facebook.net"]');
+        if (old) old.remove();
+        window.fbAsyncInit = function() { try { FB.init({ xfbml: true, version: "v19.0" }); } catch(e) {} };
+        var s = document.createElement("script");
+        s.src = "https://connect.facebook.net/en_US/sdk.js";
+        s.async = true;
+        document.head.appendChild(s);
+        var waited = 0;
+        function poll() {
+          if (window.FB && FB.XFBML) { parse(); return; }
+          if (waited < 50) { waited++; setTimeout(poll, 100); }
+        }
+        poll();
       }
 
       function loadInstagramSDK() {
-        if (window.instgrm && window.instgrm.Embeds) {
-          try { window.instgrm.Embeds.process(); } catch(e) {}
-        } else if (!document.querySelector('script[src*="instagram.com/embed.js"]')) {
-          var s = document.createElement("script");
-          s.src = "https://www.instagram.com/embed.js";
-          s.async = true;
-          document.head.appendChild(s);
+        function process() {
+          requestAnimationFrame(function() {
+            try { window.instgrm.Embeds.process(); } catch(e) {}
+          });
         }
+        clearSDK("instgrm");
+        var old = document.querySelector('script[src*="instagram.com/embed.js"]');
+        if (old) old.remove();
+        var s = document.createElement("script");
+        s.src = "https://www.instagram.com/embed.js";
+        s.async = true;
+        document.head.appendChild(s);
+        var waited = 0;
+        function poll() {
+          if (window.instgrm && window.instgrm.Embeds) { process(); return; }
+          if (waited < 50) { waited++; setTimeout(poll, 100); }
+        }
+        poll();
       }
 
       function loadTikTokSDK() {
-        if (window.tiktok && window.tiktok.embed) {
-          try { window.tiktok.embed(); } catch(e) {}
-        } else if (!document.querySelector('script[src*="tiktok.com/embed.js"]')) {
-          var s = document.createElement("script");
-          s.src = "https://www.tiktok.com/embed.js";
-          s.async = true;
-          s.onload = function() {
-            if (window.tiktok && window.tiktok.embed) {
-              try { window.tiktok.embed(); } catch(e) {}
-            }
-          };
-          document.head.appendChild(s);
+        function embed() {
+          requestAnimationFrame(function() {
+            try { window.tiktok.embed(); } catch(e) {}
+          });
         }
+        clearSDK("tiktok");
+        var old = document.querySelector('script[src*="tiktok.com/embed.js"]');
+        if (old) old.remove();
+        var s = document.createElement("script");
+        s.src = "https://www.tiktok.com/embed.js";
+        s.async = true;
+        document.head.appendChild(s);
+        var waited = 0;
+        function poll() {
+          if (window.tiktok && window.tiktok.embed) { embed(); return; }
+          if (waited < 50) { waited++; setTimeout(poll, 100); }
+        }
+        poll();
       }
 
       var socialSection = document.getElementById("product-social");

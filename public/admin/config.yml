@@ -8,6 +8,22 @@ media_folder: "public/images/products"
 public_folder: "/images/products"
 
 collections:
+  - name: materials
+    label: Materials
+    folder: src/content/materials
+    create: true
+    fields:
+      - label: Name
+        name: name
+        widget: object
+        fields:
+          - { label: English, name: en, widget: string }
+          - { label: Nepali, name: ne, widget: string }
+          - { label: Newari, name: newa, widget: string }
+      - { label: Slug, name: slug, widget: string }
+      - { label: Icon, name: icon, widget: string, default: "🔩" }
+      - { label: Order, name: order, widget: number, default: 0 }
+
   - name: categories
     label: Categories
     folder: src/content/categories
@@ -35,6 +51,16 @@ collections:
           default: 0,
           hint: "Lower numbers appear first",
         }
+      - { label: Image, name: image, widget: image, required: false, hint: "Category banner image for homepage" }
+      - label: Description
+        name: description
+        widget: object
+        required: false
+        fields:
+          - { label: English, name: en, widget: string }
+          - { label: Nepali, name: ne, widget: string }
+          - { label: Newari, name: newa, widget: string }
+      - { label: Promoted (show in Hot Topics), name: promoted, widget: boolean, default: false }
 
   - name: products
     label: Products
@@ -60,8 +86,9 @@ collections:
           label: Category,
           name: category,
           widget: string,
-          hint: "Must match a category slug exactly (e.g. copper, brass)",
+          hint: "Functional category slug (kitchenware, puja-items, home-decor, gift-items, statue, corporate-gifts)",
         }
+      - { label: Material, name: material, widget: string, hint: "Material slug (copper, brass, bronze)" }
       - {
           label: Images,
           name: images,
@@ -71,7 +98,7 @@ collections:
       - { label: Base Price (NPR), name: basePrice, widget: number }
       - { label: In Stock, name: inStock, widget: boolean, default: true }
       - { label: Featured, name: featured, widget: boolean, default: false }
-      - label: Discount
+      - label: Product Discount (fallback)
         name: discount
         widget: object
         fields:
@@ -84,20 +111,35 @@ collections:
               default: percentage,
             }
           - { label: Value, name: value, widget: number, default: 0 }
-      - label: Attributes
-        name: attributes
+      - label: Specifications
+        name: specifications
         widget: list
+        required: false
         fields:
-          - label: Attribute Name
+          - label: Label
+            name: label
+            widget: object
+            fields:
+              - { label: English, name: en, widget: string, hint: "e.g. Weight, Height, Material" }
+              - { label: Nepali, name: ne, widget: string }
+              - { label: Newari, name: newa, widget: string }
+          - label: Value
+            name: value
+            widget: object
+            fields:
+              - { label: English, name: en, widget: string, hint: "e.g. 0.654 kgs, 28 cms" }
+              - { label: Nepali, name: ne, widget: string }
+              - { label: Newari, name: newa, widget: string }
+      - label: Attribute Groups
+        name: attributeGroups
+        widget: list
+        required: false
+        fields:
+          - label: Group Name
             name: name
             widget: object
             fields:
-              - {
-                  label: English,
-                  name: en,
-                  widget: string,
-                  hint: "e.g. Size, Finish",
-                }
+              - { label: English, name: en, widget: string, hint: "e.g. Size, Finish" }
               - { label: Nepali, name: ne, widget: string }
               - { label: Newari, name: newa, widget: string }
           - label: Options
@@ -108,39 +150,36 @@ collections:
                 name: label
                 widget: object
                 fields:
-                  - { label: English, name: en, widget: string }
+                  - { label: English, name: en, widget: string, hint: "e.g. Small, Large" }
                   - { label: Nepali, name: ne, widget: string }
                   - { label: Newari, name: newa, widget: string }
-              - {
-                  label: Price Modifier,
-                  name: priceModifier,
-                  widget: number,
-                  default: 0,
-                }
-              - label: Images (optional, shows when this option is selected)
-                name: images
-                widget: list
-                required: false
-                field: { name: image, widget: image }
-              - label: Discount (optional, overrides product discount when this option is picked)
-                name: discount
-                widget: object
-                required: false
-                fields:
-                  - {
-                      label: Active,
-                      name: active,
-                      widget: boolean,
-                      default: false,
-                    }
-                  - {
-                      label: Type,
-                      name: type,
-                      widget: select,
-                      options: [percentage, flat],
-                      default: percentage,
-                    }
-                  - { label: Value, name: value, widget: number, default: 0 }
+      - label: Variants
+        name: variants
+        widget: list
+        required: false
+        fields:
+          - { label: Key, name: key, widget: string, hint: "Unique ID e.g. small-polished" }
+          - label: Attribute Values
+            name: attributeValues
+            widget: list
+            fields:
+              - { label: Group Name, name: group, widget: string, hint: "Must match attribute group English name" }
+              - { label: Option Label, name: option, widget: string, hint: "Must match option English label" }
+          - { label: Price Modifier, name: priceModifier, widget: number, default: 0 }
+          - label: Variant Discount
+            name: discount
+            widget: object
+            required: false
+            fields:
+              - { label: Active, name: active, widget: boolean, default: false }
+              - { label: Type, name: type, widget: select, options: [percentage, flat] }
+              - { label: Value, name: value, widget: number, default: 0 }
+          - { label: In Stock, name: inStock, widget: boolean, default: true }
+          - label: Images (override product images for this variant)
+            name: images
+            widget: list
+            required: false
+            field: { name: image, widget: image }
       - label: Social Media Embeds
         name: socialEmbeds
         widget: list

@@ -126,3 +126,29 @@ html {
     font-size: 0.85rem;
     padding: 0.4rem 0.6rem;
 }
+
+/* Specs table */
+.specs-table dt {
+    font-weight: 500;
+}
+
+/* Variant selector */
+.attr-option[disabled] {
+    opacity: 0.4;
+    cursor: not-allowed;
+    position: relative;
+}
+.attr-option[disabled]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 3px,
+        rgb(0 0 0 / 0.03) 3px,
+        rgb(0 0 0 / 0.03) 6px
+    );
+    border-radius: inherit;
+    pointer-events: none;
+}

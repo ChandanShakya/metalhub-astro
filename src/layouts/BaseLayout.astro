@@ -2,6 +2,7 @@
 import { ClientRouter } from "astro:transitions";
 import Footer from "../components/Footer.astro";
 import Header from "../components/Header.astro";
+import WhatsAppFloating from "../components/WhatsAppFloating.astro";
 import type { Locale } from "../lib/i18n";
 import "../styles/global.css";
 
@@ -59,6 +60,7 @@ const ogImage = image || `${siteUrl}/og-default.jpg`;
       <slot />
     </main>
     <Footer locale={locale} />
+    <WhatsAppFloating />
 
     <script is:inline>
       document.addEventListener("astro:page-load", function() {

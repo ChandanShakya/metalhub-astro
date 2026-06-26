@@ -3,7 +3,7 @@ import { getCollection } from "astro:content";
 import ProductCard from "../../../components/ProductCard.astro";
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { getTranslations, locales } from "../../../lib/i18n";
-import { calculatePrice } from "../../../lib/pricing";
+import { calculateVariantPrice, getItemStock, resolveAttributeLabels } from "../../../lib/pricing";
 
 export function getStaticPaths() {
     return locales.map((locale) => ({
@@ -19,52 +19,170 @@ const PER_PAGE = 9;
 
 const products = await getCollection("products");
 const categories = await getCollection("categories");
+const materials = await getCollection("materials");
 const sortedCategories = categories.sort((a, b) => a.data.order - b.data.order);
-const totalPages = Math.ceil(products.length / PER_PAGE);
+const sortedMaterials = materials.sort((a, b) => a.data.order - b.data.order);
+
+const categoryMap = new Map(categories.map((c) => [c.data.slug, c.data.name]));
+const materialMap = new Map(materials.map((m) => [m.data.slug, m.data.name]));
+
+const categoryCounts = new Map<string, number>();
+const materialCounts = new Map<string, number>();
+for (const p of products) {
+    categoryCounts.set(p.data.category, (categoryCounts.get(p.data.category) || 0) + 1);
+    materialCounts.set(p.data.material, (materialCounts.get(p.data.material) || 0) + 1);
+}
+
+const productStatsData = products.map((p) => ({
+    category: p.data.category,
+    material: p.data.material,
+    slug: p.data.slug,
+    v: p.data.variants?.length || 0,
+    stock: p.data.variants?.length > 0 ? p.data.variants.reduce((s, v) => s + (v.stock ?? 0), 0) : (p.data.stock ?? 0),
+}));
+
+const categoryStockCounts = new Map<string, number>();
+const materialStockCounts = new Map<string, number>();
+for (const p of productStatsData) {
+    const ext = categoryStockCounts.get(p.category) || 0;
+    categoryStockCounts.set(p.category, ext + p.stock);
+    const exm = materialStockCounts.get(p.material) || 0;
+    materialStockCounts.set(p.material, exm + p.stock);
+}
+const totalStock = productStatsData.reduce((s, p) => s + p.stock, 0);
+const productStatsJSON = JSON.stringify(productStatsData);
+
+interface ProductItem {
+    product: (typeof products)[number];
+    variant: (typeof products)[number]["data"]["variants"][number] | null;
+    price: number;
+    originalPrice: number;
+    hasDiscount: boolean;
+    discountLabel: string;
+    variantParams: string;
+    attributeLabels: Record<string, string> | null;
+    stock: number;
+}
+
+const productItems: ProductItem[] = products.flatMap((product) => {
+    const base = product.data.basePrice;
+    const variants = product.data.variants;
+    const images = product.data.images;
+
+    if (!variants || variants.length === 0) {
+        const discounted = product.data.discount.active
+            ? product.data.discount.type === "percentage"
+                ? Math.round(base * (1 - product.data.discount.value / 100))
+                : Math.max(0, base - product.data.discount.value)
+            : base;
+        const label = product.data.discount.active
+            ? product.data.discount.type === "percentage"
+                ? `${product.data.discount.value}% off`
+                : `NPR ${product.data.discount.value} off`
+            : "";
+        return [
+            {
+                product,
+                variant: null,
+                price: discounted,
+                originalPrice: base,
+                hasDiscount: product.data.discount.active,
+                discountLabel: label,
+                variantParams: "",
+                attributeLabels: null,
+                stock: product.data.stock ?? 0,
+            },
+        ];
+    }
+
+    return variants.map((variant) => {
+        const total = base + variant.priceModifier;
+        const result = calculateVariantPrice(base, variant);
+        const labels = product.data.attributeGroups
+            ? resolveAttributeLabels(product.data.attributeGroups, locale, variant.attributeValues)
+            : {};
+        const params = new URLSearchParams();
+        for (const av of variant.attributeValues) {
+            params.set(av.group, av.option);
+        }
+        return {
+            product,
+            variant,
+            price: result.discountedPrice,
+            originalPrice: result.originalPrice,
+            hasDiscount: result.hasDiscount,
+            discountLabel: result.discountLabel,
+            variantParams: params.toString(),
+            attributeLabels: labels,
+            stock: variant.stock ?? 0,
+        };
+    });
+});
+
+const totalItemPages = Math.ceil(productItems.length / PER_PAGE);
 ---
 <BaseLayout title={t("products.title")} locale={locale}>
   <section class="py-8 container mx-auto px-4">
     <h1 class="text-2xl font-bold mb-5">{t("products.title")}</h1>
 
-    {products.length === 0 ? (
+    {productItems.length === 0 ? (
       <p class="text-center py-12 text-text-3">{t("products.noProducts")}</p>
     ) : (
       <>
         {sortedCategories.length > 0 && (
-          <div class="flex gap-2 flex-wrap mb-6">
-            <button class="filter-btn active bg-surface-2 border border-border rounded-full px-3.5 py-1.5 cursor-pointer text-sm font-medium transition-[colors,transform] text-text-2 hover:border-accent hover:text-accent" data-category="all" aria-pressed="true">{t("products.all")}</button>
+          <div class="flex gap-2 flex-wrap mb-3">
+            <button class="filter-btn group active bg-surface-2 border border-border rounded-full px-3.5 py-1.5 cursor-pointer text-sm font-medium transition-[colors,transform] text-text-2 hover:border-accent hover:text-accent" data-filter-type="category" data-category="all" aria-pressed="true">{t("products.all")} <span class="count-badge text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full bg-surface-3 text-text-2 leading-none ml-1">{totalStock}</span></button>
             {sortedCategories.map((cat) => (
-              <button class="filter-btn bg-surface-2 border border-border rounded-full px-3.5 py-1.5 cursor-pointer text-sm font-medium transition-[colors,transform] text-text-2 hover:border-accent hover:text-accent" data-category={cat.data.slug} aria-pressed="false">
-                {cat.data.icon} {cat.data.name[locale as keyof typeof cat.data.name] || cat.data.name.en}
+              <button class="filter-btn group bg-surface-2 border border-border rounded-full px-3.5 py-1.5 cursor-pointer text-sm font-medium transition-[colors,transform] text-text-2 hover:border-accent hover:text-accent" data-filter-type="category" data-category={cat.data.slug} aria-pressed="false">
+                {cat.data.icon} {cat.data.name[locale as keyof typeof cat.data.name] || cat.data.name.en} <span class="count-badge text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full bg-surface-3 text-text-2 leading-none ml-1">{categoryStockCounts.get(cat.data.slug) ?? 0}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        {sortedMaterials.length > 0 && (
+          <div class="flex gap-2 flex-wrap mb-3">
+            <button class="filter-btn group active bg-surface-2 border border-border rounded-full px-3.5 py-1.5 cursor-pointer text-sm font-medium transition-[colors,transform] text-text-2 hover:border-accent hover:text-accent" data-filter-type="material" data-material="all" aria-pressed="true">{t("products.all")} <span class="count-badge text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full bg-surface-3 text-text-2 leading-none ml-1">{totalStock}</span></button>
+            {sortedMaterials.map((mat) => (
+              <button class="filter-btn group bg-surface-2 border border-border rounded-full px-3.5 py-1.5 cursor-pointer text-sm font-medium transition-[colors,transform] text-text-2 hover:border-accent hover:text-accent" data-filter-type="material" data-material={mat.data.slug} aria-pressed="false">
+                {mat.data.name[locale as keyof typeof mat.data.name] || mat.data.name.en} <span class="count-badge text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full bg-surface-3 text-text-2 leading-none ml-1">{materialStockCounts.get(mat.data.slug) ?? 0}</span>
               </button>
             ))}
           </div>
         )}
 
+        <div id="category-stats" class="text-xs text-text-3 mb-4 px-1 leading-relaxed"></div>
+
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6" id="product-grid" data-per-page={String(PER_PAGE)}>
-          {products.map((product, i) => {
-            const result = calculatePrice(product.data.basePrice, [], product.data.discount, []);
+          {productItems.map((item, i) => {
             const pageNum = Math.floor(i / PER_PAGE) + 1;
+            const catName = categoryMap.get(item.product.data.category);
+            const matName = materialMap.get(item.product.data.material);
             return (
-              <div class:list={["product-item", { "hidden": pageNum > 1 }]} data-category={product.data.category} data-page={String(pageNum)}>
+              <div class:list={["product-item", { "hidden": pageNum > 1 }]} data-category={item.product.data.category} data-material={item.product.data.material} data-page={String(pageNum)}>
                 <ProductCard
-                  slug={product.data.slug}
-                  name={product.data.name[locale as keyof typeof product.data.name] || product.data.name.en}
-                  category={product.data.category}
-                  image={product.data.images[0] || "/images/products/placeholder.jpg"}
-                  price={result.discountedPrice}
-                  originalPrice={result.originalPrice}
-                  hasDiscount={result.hasDiscount}
-                  discountLabel={result.discountLabel}
-                  inStock={product.data.inStock}
+                  slug={item.product.data.slug}
+                  name={item.product.data.name[locale as keyof typeof item.product.data.name] || item.product.data.name.en}
+                  category={item.product.data.category}
+                  material={item.product.data.material}
+                  categoryName={catName ? (catName[locale as keyof typeof catName] || catName.en) : undefined}
+                  materialName={matName ? (matName[locale as keyof typeof matName] || matName.en) : undefined}
+                  image={(item.variant && item.variant.images && item.variant.images[0]) || item.product.data.images[0] || "/images/products/placeholder.jpg"}
+                  price={item.price}
+                  originalPrice={item.originalPrice}
+                  hasDiscount={item.hasDiscount}
+                  discountLabel={item.discountLabel}
+                  inStock={item.variant ? item.variant.inStock : item.product.data.inStock}
+                  stock={item.stock}
                   locale={locale}
+                  variantParams={item.variantParams || undefined}
+                  attributeLabels={item.attributeLabels || undefined}
                 />
               </div>
             );
           })}
         </div>
 
-        {totalPages > 1 && (
+        {totalItemPages > 1 && (
           <div class="text-center mt-8">
             <button id="load-more-btn" data-ui-text={JSON.stringify({ loadMore: t("products.loadMore"), showing: t("products.showing") })} class="bg-surface-2 border border-border rounded-xl px-6 py-3 text-sm font-semibold cursor-pointer transition-[colors,transform] text-text-2 hover:border-accent hover:text-accent hover:bg-surface-3">
               {t("products.loadMore")}
@@ -76,9 +194,142 @@ const totalPages = Math.ceil(products.length / PER_PAGE);
     )}
   </section>
 
+  <div id="category-stats-data" data-stats={productStatsJSON} class="hidden" aria-hidden="true"></div>
+
+  <style>
+    .filter-btn.active:hover {
+      color: white !important;
+      border-color: rgba(255, 255, 255, 0.3) !important;
+    }
+    .filter-btn.active:hover .count-badge {
+      background-color: rgba(255, 255, 255, 0.2) !important;
+      color: white !important;
+    }
+  </style>
+
   <script>
     window.__productsCtx = window.__productsCtx || { id: 0, abort: null };
     var _productsId = ++window.__productsCtx.id;
+
+    function updateCategoryStats() {
+      var statsEl = document.getElementById("category-stats");
+      if (!statsEl) return;
+      var dataEl = document.getElementById("category-stats-data");
+      if (!dataEl) return;
+      var allStats = JSON.parse(dataEl.getAttribute("data-stats") || "[]");
+      var activeCat = document.querySelector('.filter-btn.active[data-filter-type="category"]') as HTMLButtonElement | null;
+      var activeMat = document.querySelector('.filter-btn.active[data-filter-type="material"]') as HTMLButtonElement | null;
+      var cat = activeCat?.dataset.category || "all";
+      var mat = activeMat?.dataset.material || "all";
+
+      var filtered = [];
+      for (var i = 0; i < allStats.length; i++) {
+        var p = allStats[i];
+        if ((cat === "all" || p.category === cat) && (mat === "all" || p.material === mat)) {
+          filtered.push(p);
+        }
+      }
+
+      var productCount = filtered.length;
+      var materials = new Set<string>();
+      var variantCount = 0;
+      var totalStock = 0;
+      for (var i = 0; i < filtered.length; i++) {
+        materials.add(filtered[i].material);
+        variantCount += filtered[i].v;
+        totalStock += filtered[i].stock;
+      }
+      var materialCount = materials.size;
+
+      statsEl.textContent = productCount + " products · " + materialCount + " materials · " + variantCount + " variants · " + totalStock + " in stock";
+    }
+
+    function updateFilterCounts() {
+      var dataEl = document.getElementById("category-stats-data");
+      if (!dataEl) return;
+      var allStats = JSON.parse(dataEl.getAttribute("data-stats") || "[]");
+      var activeCat = document.querySelector('.filter-btn.active[data-filter-type="category"]') as HTMLButtonElement | null;
+      var activeMat = document.querySelector('.filter-btn.active[data-filter-type="material"]') as HTMLButtonElement | null;
+      var cat = activeCat?.dataset.category || "all";
+      var mat = activeMat?.dataset.material || "all";
+
+      document.querySelectorAll('.filter-btn[data-filter-type="material"]').forEach(function(btn) {
+        var btnMat = btn.dataset.material;
+        var stock = 0;
+        for (var i = 0; i < allStats.length; i++) {
+          var p = allStats[i];
+          if ((btnMat === "all" || p.material === btnMat) && (cat === "all" || p.category === cat)) {
+            stock += p.stock;
+          }
+        }
+        var badge = btn.querySelector(".count-badge");
+        if (badge) badge.textContent = stock;
+      });
+
+      document.querySelectorAll('.filter-btn[data-filter-type="category"]').forEach(function(btn) {
+        var btnCat = btn.dataset.category;
+        var stock = 0;
+        for (var i = 0; i < allStats.length; i++) {
+          var p = allStats[i];
+          if ((btnCat === "all" || p.category === btnCat) && (mat === "all" || p.material === mat)) {
+            stock += p.stock;
+          }
+        }
+        var badge = btn.querySelector(".count-badge");
+        if (badge) badge.textContent = stock;
+      });
+    }
+
+    function applyFilters() {
+      var grid = document.getElementById("product-grid");
+      var perPage = parseInt(grid?.getAttribute("data-per-page") || "9");
+      var currentPage = parseInt(grid?.getAttribute("data-page") || "1");
+
+      var activeCat = document.querySelector('.filter-btn.active[data-filter-type="category"]') as HTMLButtonElement | null;
+      var activeMat = document.querySelector('.filter-btn.active[data-filter-type="material"]') as HTMLButtonElement | null;
+      var cat = activeCat?.dataset.category || "all";
+      var mat = activeMat?.dataset.material || "all";
+
+      var visibleCount = 0;
+      var totalMatch = 0;
+      document.querySelectorAll(".product-item").forEach(item => {
+        var el = item as HTMLElement;
+        var matchCat = cat === "all" || el.dataset.category === cat;
+        var matchMat = mat === "all" || el.dataset.material === mat;
+        var match = matchCat && matchMat;
+        if (match) totalMatch++;
+        if (match) {
+          visibleCount++;
+          if (visibleCount <= perPage * currentPage) {
+            el.classList.remove("hidden");
+          } else {
+            el.classList.add("hidden");
+          }
+        } else {
+          el.classList.add("hidden");
+        }
+      });
+
+      var params = new URLSearchParams(window.location.search);
+      if (cat === "all") params.delete("category"); else params.set("category", cat);
+      if (mat === "all") params.delete("material"); else params.set("material", mat);
+      var newUrl = window.location.pathname + (params.toString() ? "?" + params.toString() : "");
+      history.replaceState(null, "", newUrl);
+
+      updateCategoryStats();
+      updateFilterCounts();
+
+      var loadMoreBtn = document.getElementById("load-more-btn");
+      if (loadMoreBtn) {
+        loadMoreBtn.classList.toggle("hidden", visibleCount <= perPage * currentPage);
+      }
+      var loadMoreInfo = document.getElementById("load-more-info");
+      if (loadMoreInfo) {
+        var loadMoreBtnEl = document.getElementById("load-more-btn");
+        var uiText = loadMoreBtnEl ? JSON.parse(loadMoreBtnEl.getAttribute("data-ui-text") || "{}") : {};
+        loadMoreInfo.textContent = (uiText.showing || "Showing {v} of {t} products").replace("{v}", String(Math.min(visibleCount, perPage * currentPage))).replace("{t}", String(totalMatch));
+      }
+    }
 
     function initFiltersAndPagination() {
       if (window.__productsCtx.abort) window.__productsCtx.abort.abort();
@@ -88,67 +339,56 @@ const totalPages = Math.ceil(products.length / PER_PAGE);
       var grid = document.getElementById("product-grid");
       var perPage = parseInt(grid?.getAttribute("data-per-page") || "9");
       var currentPage = 1;
+      if (grid) grid.setAttribute("data-page", "1");
 
-      document.querySelectorAll(".filter-btn").forEach(btn => {
-        btn.addEventListener("click", function(this: HTMLButtonElement) {
-          document.querySelectorAll(".filter-btn").forEach(b => {
-            b.classList.remove("active", "bg-accent", "text-white", "border-accent");
-            b.classList.add("bg-surface-2", "text-text-2", "border-border");
-            b.setAttribute("aria-pressed", "false");
-          });
-          this.classList.add("active", "bg-accent", "text-white", "border-accent");
-          this.classList.remove("bg-surface-2", "text-text-2", "border-border");
-          this.setAttribute("aria-pressed", "true");
+      var filterGroups = ["category", "material"];
 
-          var cat = this.dataset.category;
-          var visibleCount = 0;
-          document.querySelectorAll(".product-item").forEach(item => {
-            var el = item as HTMLElement;
-            var matchCat = cat === "all" || el.dataset.category === cat;
-            if (matchCat) {
-              visibleCount++;
-              if (visibleCount <= perPage * currentPage) {
-                el.classList.remove("hidden");
-              } else {
-                el.classList.add("hidden");
+      filterGroups.forEach(function(type) {
+        document.querySelectorAll('.filter-btn[data-filter-type="' + type + '"]').forEach(function(btn) {
+          btn.addEventListener("click", function(this: HTMLButtonElement) {
+            document.querySelectorAll('.filter-btn[data-filter-type="' + type + '"]').forEach(function(b) {
+              b.classList.remove("active", "bg-accent", "text-white", "border-accent");
+              b.classList.add("bg-surface-2", "text-text-2", "border-border");
+              b.setAttribute("aria-pressed", "false");
+              var badge = b.querySelector(".count-badge");
+              if (badge) {
+                badge.classList.remove("bg-white/20", "text-white");
+                badge.classList.add("bg-surface-3", "text-text-2");
               }
-            } else {
-              el.classList.add("hidden");
+            });
+            this.classList.add("active", "bg-accent", "text-white", "border-accent");
+            this.classList.remove("bg-surface-2", "text-text-2", "border-border");
+            this.setAttribute("aria-pressed", "true");
+            var thisBadge = this.querySelector(".count-badge");
+            if (thisBadge) {
+              thisBadge.classList.remove("bg-surface-3", "text-text-2");
+              thisBadge.classList.add("bg-white/20", "text-white");
             }
-          });
 
-          var catParam = cat === "all" ? null : cat;
-          var params = new URLSearchParams(window.location.search);
-          if (catParam) params.set("category", catParam); else params.delete("category");
-          var newUrl = window.location.pathname + (params.toString() ? "?" + params.toString() : "");
-          history.replaceState(null, "", newUrl);
-
-          var loadMoreBtn = document.getElementById("load-more-btn");
-          var loadMoreInfo = document.getElementById("load-more-info");
-          var totalMatch = document.querySelectorAll(".product-item").length;
-          if (loadMoreBtn) {
-            loadMoreBtn.classList.toggle("hidden", visibleCount <= perPage * currentPage);
-          }
-          if (loadMoreInfo) {
-            var loadMoreBtnEl = document.getElementById("load-more-btn");
-            var uiText = loadMoreBtnEl ? JSON.parse(loadMoreBtnEl.getAttribute("data-ui-text") || "{}") : {};
-            loadMoreInfo.textContent = (uiText.showing || "Showing {v} of {t} products").replace("{v}", String(Math.min(visibleCount, perPage * currentPage))).replace("{t}", String(totalMatch));
-          }
-        }, { signal });
+            currentPage = 1;
+            grid?.setAttribute("data-page", "1");
+            applyFilters();
+          }, { signal });
+        });
       });
 
       var loadMoreBtn = document.getElementById("load-more-btn");
       if (loadMoreBtn) {
         loadMoreBtn.addEventListener("click", function() {
           currentPage++;
-          var visibleCount = 0;
-          var activeFilter = document.querySelector(".filter-btn.active") as HTMLButtonElement;
-          var cat = activeFilter?.dataset.category || "all";
+          grid?.setAttribute("data-page", String(currentPage));
 
-          document.querySelectorAll(".product-item").forEach(item => {
+          var activeCat = document.querySelector('.filter-btn.active[data-filter-type="category"]') as HTMLButtonElement | null;
+          var activeMat = document.querySelector('.filter-btn.active[data-filter-type="material"]') as HTMLButtonElement | null;
+          var cat = activeCat?.dataset.category || "all";
+          var mat = activeMat?.dataset.material || "all";
+
+          var visibleCount = 0;
+          document.querySelectorAll(".product-item").forEach(function(item) {
             var el = item as HTMLElement;
             var matchCat = cat === "all" || el.dataset.category === cat;
-            if (matchCat) {
+            var matchMat = mat === "all" || el.dataset.material === mat;
+            if (matchCat && matchMat) {
               visibleCount++;
               if (visibleCount <= perPage * currentPage) {
                 el.classList.remove("hidden");
@@ -172,8 +412,11 @@ const totalPages = Math.ceil(products.length / PER_PAGE);
 
       var urlParams = new URLSearchParams(window.location.search);
       var initialCat = urlParams.get("category") || "all";
-      var activeBtn = document.querySelector(`.filter-btn[data-category="${initialCat}"]`) as HTMLButtonElement | null;
-      if (activeBtn) activeBtn.click();
+      var initialMat = urlParams.get("material") || "all";
+      var catBtn = document.querySelector('.filter-btn[data-category="' + initialCat + '"]') as HTMLButtonElement | null;
+      if (catBtn) catBtn.click();
+      var matBtn = document.querySelector('.filter-btn[data-material="' + initialMat + '"]') as HTMLButtonElement | null;
+      if (matBtn) matBtn.click();
     }
 
     document.addEventListener("astro:page-load", function() {

@@ -85,33 +85,6 @@ const t = await getTranslations(locale);
       if (sk) sk.style.display = "none";
     }
 
-    // Keep skeleton visible until the embed <iframe> has fully loaded.
-    // Falls back after 10s so the page is never stuck.
-    function waitForIframe(container, timeout) {
-      if (!container) return;
-      timeout = timeout || 10000;
-      var check = function() {
-        var iframe = container.querySelector("iframe");
-        if (iframe) {
-          if (iframe.complete || (iframe.contentWindow && iframe.contentWindow.document && iframe.contentWindow.document.readyState === "complete")) {
-            hideSkeleton(container);
-          } else {
-            iframe.addEventListener("load", function() { hideSkeleton(container); }, { once: true });
-            setTimeout(function() { if (container.querySelector("iframe")) hideSkeleton(container); }, 4000);
-          }
-          return true;
-        }
-        return false;
-      };
-      if (!check()) {
-        var obs = new MutationObserver(function() {
-          if (check()) obs.disconnect();
-        });
-        obs.observe(container, { childList: true, subtree: true });
-      }
-      setTimeout(function() { hideSkeleton(container); }, timeout);
-    }
-
     // Load each embed SDK only when its container scrolls into view.
     function initEmbed(elementId, loadFn) {
       var container = document.getElementById(elementId);
@@ -133,36 +106,37 @@ const t = await getTranslations(locale);
       }
     }
 
+    function clearSDK(name) {
+      try { window[name] = undefined; } catch(e) {}
+      try { delete window[name]; } catch(e) {}
+    }
+
     // --- Facebook ---
     function loadFacebook(container) {
       if (_socialLoaded.fb) return;
       _socialLoaded.fb = true;
 
-      if (window.FB && FB.XFBML) {
-        try { FB.XFBML.parse(); } catch(e) {}
-      } else {
-        var pending = function() {
-          try { FB.init({ xfbml: true, version: "v19.0" }); } catch(e) {}
-        };
-        if (!window._fbAsyncInitOverridden) {
-          window._fbAsyncInitOverridden = true;
-          var orig = window.fbAsyncInit;
-          window.fbAsyncInit = function() {
-            if (orig) try { orig(); } catch(e) {}
-            pending();
-          };
-        }
-        if (!document.querySelector('script[src*="connect.facebook.net"]')) {
-          var s = document.createElement("script");
-          s.src = "https://connect.facebook.net/en_US/sdk.js";
-          s.async = true;
-          s.onload = function() {
-            if (window.FB && FB.XFBML) { try { FB.XFBML.parse(); } catch(e) {} }
-          };
-          document.head.appendChild(s);
-        }
+      function parse() {
+        requestAnimationFrame(function() {
+          try { FB.XFBML.parse(); } catch(e) {}
+          hideSkeleton(container);
+        });
       }
-      waitForIframe(container);
+      clearSDK("FB");
+      var old = document.querySelector('script[src*="connect.facebook.net"]');
+      if (old) old.remove();
+      window.fbAsyncInit = function() { try { FB.init({ xfbml: true, version: "v19.0" }); } catch(e) {} };
+      var s = document.createElement("script");
+      s.src = "https://connect.facebook.net/en_US/sdk.js";
+      s.async = true;
+      document.head.appendChild(s);
+      var waited = 0;
+      function poll() {
+        if (window.FB && FB.XFBML) { parse(); return; }
+        if (waited < 50) { waited++; setTimeout(poll, 100); }
+      }
+      poll();
+      setTimeout(function() { hideSkeleton(container); }, 3000);
     }
 
     // --- Instagram ---
@@ -170,15 +144,26 @@ const t = await getTranslations(locale);
       if (_socialLoaded.ig) return;
       _socialLoaded.ig = true;
 
-      if (window.instgrm && window.instgrm.Embeds) {
-        try { window.instgrm.Embeds.process(); } catch(e) {}
-      } else if (!document.querySelector('script[src*="instagram.com/embed.js"]')) {
-        var s = document.createElement("script");
-        s.src = "https://www.instagram.com/embed.js";
-        s.async = true;
-        document.head.appendChild(s);
+      function process() {
+        requestAnimationFrame(function() {
+          try { window.instgrm.Embeds.process(); } catch(e) {}
+          hideSkeleton(container);
+        });
       }
-      waitForIframe(container);
+      clearSDK("instgrm");
+      var old = document.querySelector('script[src*="instagram.com/embed.js"]');
+      if (old) old.remove();
+      var s = document.createElement("script");
+      s.src = "https://www.instagram.com/embed.js";
+      s.async = true;
+      document.head.appendChild(s);
+      var waited = 0;
+      function poll() {
+        if (window.instgrm && window.instgrm.Embeds) { process(); return; }
+        if (waited < 50) { waited++; setTimeout(poll, 100); }
+      }
+      poll();
+      setTimeout(function() { hideSkeleton(container); }, 3000);
     }
 
     // --- TikTok ---
@@ -186,20 +171,26 @@ const t = await getTranslations(locale);
       if (_socialLoaded.tt) return;
       _socialLoaded.tt = true;
 
-      if (window.tiktok && window.tiktok.embed) {
-        try { window.tiktok.embed(); } catch(e) {}
-      } else if (!document.querySelector('script[src*="tiktok.com/embed.js"]')) {
-        var s = document.createElement("script");
-        s.src = "https://www.tiktok.com/embed.js";
-        s.async = true;
-        s.onload = function() {
-          if (window.tiktok && window.tiktok.embed) {
-            try { window.tiktok.embed(); } catch(e) {}
-          }
-        };
-        document.head.appendChild(s);
+      function embed() {
+        requestAnimationFrame(function() {
+          try { window.tiktok.embed(); } catch(e) {}
+          hideSkeleton(container);
+        });
       }
-      waitForIframe(container);
+      clearSDK("tiktok");
+      var old = document.querySelector('script[src*="tiktok.com/embed.js"]');
+      if (old) old.remove();
+      var s = document.createElement("script");
+      s.src = "https://www.tiktok.com/embed.js";
+      s.async = true;
+      document.head.appendChild(s);
+      var waited = 0;
+      function poll() {
+        if (window.tiktok && window.tiktok.embed) { embed(); return; }
+        if (waited < 50) { waited++; setTimeout(poll, 100); }
+      }
+      poll();
+      setTimeout(function() { hideSkeleton(container); }, 3000);
     }
 
     document.addEventListener("astro:page-load", function() {

@@ -9,12 +9,32 @@ interface LocalizedString {
 }
 interface AttributeOption {
     label: LocalizedString;
-    priceModifier?: number;
-    discount?: { active?: boolean; type?: string; value?: number };
+}
+interface AttributeGroup {
+    name: LocalizedString;
+    options: AttributeOption[];
+}
+interface VariantDiscount {
+    active: boolean;
+    type: "percentage" | "flat";
+    value: number;
+}
+interface VariantAttrValue {
+    group: string;
+    option: string;
+}
+interface Variant {
+    key: string;
+    attributeValues: VariantAttrValue[];
+    priceModifier: number;
+    discount: VariantDiscount;
     images?: string[];
+    inStock: boolean;
+    stock: number;
 }
 interface Props {
-    attributes: { name: LocalizedString; options: AttributeOption[] }[];
+    attributeGroups: AttributeGroup[];
+    variants: Variant[];
     locale: Locale;
     basePrice: number;
     productSlug: string;
@@ -22,9 +42,11 @@ interface Props {
     productNameAll: LocalizedString;
     productImage?: string;
 }
-const { attributes, locale, basePrice, productSlug, productName, productNameAll, productImage } = Astro.props;
+const { attributeGroups, variants, locale, basePrice, productSlug, productName, productNameAll, productImage } =
+    Astro.props;
 const t = await getTranslations(locale);
 const checkoutPath = locale === "en" ? "/checkout/" : `/${locale}/checkout/`;
+const totalStock = variants.reduce((s, v) => s + (v.stock ?? 0), 0);
 
 function localize(obj: LocalizedString): string {
     return obj[locale] || obj.en;
@@ -33,34 +55,28 @@ function localize(obj: LocalizedString): string {
 const allAttributeLabels: Record<string, Record<string, string>> = {};
 for (const loc of ["en", "ne", "newa"] as const) {
     allAttributeLabels[loc] = {};
-    for (const attr of attributes) {
-        allAttributeLabels[loc][attr.name.en] = attr.name[loc] || attr.name.en;
-        for (const opt of attr.options) {
+    for (const group of attributeGroups) {
+        allAttributeLabels[loc][group.name.en] = group.name[loc] || group.name.en;
+        for (const opt of group.options) {
             allAttributeLabels[loc][opt.label.en] = opt.label[loc] || opt.label.en;
         }
     }
 }
 ---
 
-<div id="product-attributes">
-  {attributes.map((attr) => (
+<div id="product-attributes" data-variants={JSON.stringify(variants)} data-base-price={basePrice}>
+  {attributeGroups.map((group) => (
     <fieldset class="mb-4 border-none p-0 m-0">
-      <legend class="block font-semibold text-sm mb-2 text-text-1 p-0">{localize(attr.name)}</legend>
-      <div class="flex gap-2 flex-wrap" data-attribute-name={localize(attr.name)} data-key={attr.name.en}>
-        {attr.options.map((opt: AttributeOption) => (
+      <legend class="block font-semibold text-sm mb-2 text-text-1 p-0">{localize(group.name)}</legend>
+      <div class="flex gap-2 flex-wrap" data-attribute-name={localize(group.name)} data-key={group.name.en}>
+        {group.options.map((opt) => (
           <button
             class="attr-option px-3.5 py-2 bg-surface-2 border-2 border-border rounded-lg cursor-pointer text-sm font-medium transition-[colors,transform] text-text-1 hover:border-accent-light"
             data-label={localize(opt.label)}
             data-key={opt.label.en}
-            data-modifier={opt.priceModifier || 0}
-            data-discount-active={opt.discount?.active || false}
-            data-discount-type={opt.discount?.type || "percentage"}
-            data-discount-value={opt.discount?.value || 0}
-            data-images={opt.images ? JSON.stringify(opt.images) : "[]"}
             data-selected="false"
           >
             {localize(opt.label)}
-            {opt.discount?.active && <span class="inline-flex items-center bg-sale text-white text-[0.62rem] font-bold px-1.5 py-0.5 rounded uppercase ml-1">{t("products.sale")}</span>}
           </button>
         ))}
       </div>
@@ -68,6 +84,7 @@ for (const loc of ["en", "ne", "newa"] as const) {
   ))}
 </div>
 
+<div id="variant-unavailable" class="hidden text-sale text-sm font-medium my-2">Combination not available</div>
 <div id="price-display" class="text-2xl font-extrabold my-4 text-text-1"></div>
 
 <div class="flex items-center gap-3 mb-2">
@@ -77,23 +94,26 @@ for (const loc of ["en", "ne", "newa"] as const) {
     <input id="qty-input" type="number" min="1" max="99" value="1" class="w-12 h-9 text-center border-none bg-surface-2 text-text-1 font-semibold text-base [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
     <button id="qty-plus" aria-label="Increase quantity" class="w-9 h-9 flex items-center justify-center bg-surface-2 cursor-pointer transition-colors hover:bg-surface-3 text-text-1 font-bold border-none">+</button>
   </div>
+  <span id="stock-display" data-total-stock={totalStock} class="inline-flex items-center text-[0.62rem] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide"></span>
 </div>
 
 <div class="flex flex-col gap-2 mt-2">
-  <button
-    id="add-to-cart-btn"
-    class="bg-accent text-white border-none rounded-xl py-3 px-6 text-base font-semibold cursor-pointer transition-[colors,transform] opacity-50 cursor-not-allowed"
-    data-base-price={basePrice}
-    data-product-slug={productSlug}
-    data-product-name={productName}
-    data-product-name-all={JSON.stringify(productNameAll)}
-    data-product-image={productImage}
-    data-attribute-labels={JSON.stringify(allAttributeLabels)}
-    data-ui-text={JSON.stringify({ added: t("products.added"), addToCart: t("products.addToCart"), percentOff: t("products.percentOff"), amountOff: t("products.amountOff") })}
-    disabled
-  >
-    {t("products.addToCart")}
-  </button>
+  <div class="flex items-center gap-3">
+    <button
+      id="add-to-cart-btn"
+      class="flex-1 bg-accent text-white border-none rounded-xl py-3 px-6 text-base font-semibold cursor-pointer transition-[colors,transform] opacity-50 cursor-not-allowed"
+      data-base-price={basePrice}
+      data-product-slug={productSlug}
+      data-product-name={productName}
+      data-product-name-all={JSON.stringify(productNameAll)}
+      data-product-image={productImage}
+      data-attribute-labels={JSON.stringify(allAttributeLabels)}
+      data-ui-text={JSON.stringify({ added: t("products.added"), addToCart: t("products.addToCart"), percentOff: t("products.percentOff"), amountOff: t("products.amountOff") })}
+      disabled
+    >
+      {t("products.addToCart")}
+    </button>
+  </div>
   <a id="go-checkout-btn" href={checkoutPath} class="hidden items-center justify-center bg-success text-white border-none rounded-xl py-3 px-6 text-base font-semibold cursor-pointer no-underline transition-[colors,transform] hover:bg-green-800 hover:-translate-y-px">
     {t("products.goToCheckout")}
   </a>
@@ -111,24 +131,93 @@ for (const loc of ["en", "ne", "newa"] as const) {
     window.dispatchEvent(new Event("cart-updated"));
   }
 
+  function getVariants() {
+    var el = document.getElementById("product-attributes");
+    try { return JSON.parse(el?.getAttribute("data-variants") || "[]"); } catch { return []; }
+  }
+
+  function getBasePrice() {
+    var el = document.getElementById("product-attributes");
+    return parseFloat(el?.getAttribute("data-base-price") || "0");
+  }
+
   function selectOption(btn) {
     var group = btn.closest("[data-attribute-name]");
     if (!group) return;
+    var isSelected = btn.getAttribute("data-selected") === "true";
     group.querySelectorAll(".attr-option").forEach(function(b) {
       b.setAttribute("data-selected", "false");
       b.classList.remove("border-accent", "bg-accent-surface", "text-accent-dark", "font-semibold");
       b.classList.add("border-border", "bg-surface-2", "text-text-1");
     });
-    btn.setAttribute("data-selected", "true");
-    btn.classList.remove("border-border", "bg-surface-2", "text-text-1");
-    btn.classList.add("border-accent", "bg-accent-surface", "text-accent-dark", "font-semibold");
-
-    var imagesStr = btn.getAttribute("data-images") || "[]";
-    var images = [];
-    try { images = JSON.parse(imagesStr); } catch(e) {}
-    if (images.length > 0) {
-      window.dispatchEvent(new CustomEvent("attribute-image-changed", { detail: { images: images } }));
+    if (!isSelected) {
+      btn.setAttribute("data-selected", "true");
+      btn.classList.remove("border-border", "bg-surface-2", "text-text-1");
+      btn.classList.add("border-accent", "bg-accent-surface", "text-accent-dark", "font-semibold");
     }
+
+    // Dispatch image changed if matching variant has images
+    var matched = findMatchingVariant();
+    if (matched && matched.images && matched.images.length > 0) {
+      window.dispatchEvent(new CustomEvent("attribute-image-changed", { detail: { images: matched.images } }));
+    }
+  }
+
+  function getSelectedOptions() {
+    var options = {};
+    document.querySelectorAll("[data-attribute-name]").forEach(function(group) {
+      var name = group.getAttribute("data-key");
+      var selected = group.querySelector('[data-selected="true"]');
+      if (selected) options[name] = selected.getAttribute("data-key");
+    });
+    return options;
+  }
+
+  function findMatchingVariant() {
+    var selected = getSelectedOptions();
+    var variants = getVariants();
+    var selectedKeys = Object.keys(selected);
+    if (selectedKeys.length === 0) return null;
+    return variants.find(function(v) {
+      return v.attributeValues.every(function(av) {
+        return selected[av.group] === av.option;
+      });
+    }) || null;
+  }
+
+  function getAvailableOptions(groupName) {
+    var selected = getSelectedOptions();
+    var variants = getVariants();
+    var available = new Set();
+    variants.forEach(function(v) {
+      var matches = true;
+      v.attributeValues.forEach(function(av) {
+        if (av.group !== groupName && selected[av.group] && selected[av.group] !== av.option) {
+          matches = false;
+        }
+      });
+      if (matches) {
+        v.attributeValues.forEach(function(av) {
+          if (av.group === groupName) available.add(av.option);
+        });
+      }
+    });
+    return available;
+  }
+
+  function filterOptions() {
+    document.querySelectorAll("[data-attribute-name]").forEach(function(group) {
+      var key = group.getAttribute("data-key");
+      var available = getAvailableOptions(key);
+      group.querySelectorAll(".attr-option").forEach(function(btn) {
+        var optKey = btn.getAttribute("data-key");
+        var isAvailable = available.has(optKey);
+        btn.disabled = !isAvailable;
+        btn.classList.toggle("opacity-40", !isAvailable);
+        btn.classList.toggle("cursor-not-allowed", !isAvailable);
+        btn.classList.toggle("cursor-pointer", isAvailable);
+      });
+    });
   }
 
   function areAllGroupsSelected() {
@@ -143,99 +232,115 @@ for (const loc of ["en", "ne", "newa"] as const) {
     var btn = document.getElementById("add-to-cart-btn");
     if (!btn) return;
     var ready = areAllGroupsSelected();
-    btn.disabled = !ready;
-    btn.classList.toggle("opacity-50", !ready);
-    btn.classList.toggle("cursor-not-allowed", !ready);
+    var matched = ready ? findMatchingVariant() : null;
+    var isAvailable = matched && matched.inStock;
+    btn.disabled = !(ready && isAvailable);
+    btn.classList.toggle("opacity-50", !(ready && isAvailable));
+    btn.classList.toggle("cursor-not-allowed", !(ready && isAvailable));
+
+    var unavailable = document.getElementById("variant-unavailable");
+    if (unavailable) {
+      unavailable.classList.toggle("hidden", !ready || !!matched);
+    }
   }
 
-  function getSelectedImages() {
-    var allImages = [];
-    document.querySelectorAll("[data-attribute-name]").forEach(function(group) {
-      var selected = group.querySelector('[data-selected="true"]');
-      if (selected) {
-        try {
-          var imgs = JSON.parse(selected.getAttribute("data-images") || "[]");
-          allImages = allImages.concat(imgs);
-        } catch(e) {}
-      }
-    });
-    return allImages;
-  }
-
-  function getSelectedOptions() {
-    var options = {};
-    document.querySelectorAll("[data-attribute-name]").forEach(function(group) {
-      var name = group.getAttribute("data-key");
-      var selected = group.querySelector('[data-selected="true"]');
-      if (selected) options[name] = selected.getAttribute("data-key");
-    });
-    return options;
-  }
-
-  function getAllOptionLabels() {
+  function getSelectedOptionLabels() {
     var raw = document.getElementById("add-to-cart-btn")?.getAttribute("data-attribute-labels") || "{}";
     try { return JSON.parse(raw); } catch { return {}; }
   }
 
-  function getSelectedModifiers() {
-    var modifiers = [];
-    document.querySelectorAll("[data-attribute-name]").forEach(function(group) {
-      var selected = group.querySelector('[data-selected="true"]');
-      if (selected) modifiers.push(parseFloat(selected.getAttribute("data-modifier") || "0"));
-    });
-    return modifiers;
-  }
-
-  function getSelectedOptionDiscounts() {
-    var discounts = [];
-    document.querySelectorAll("[data-attribute-name]").forEach(function(group) {
-      var selected = group.querySelector('[data-selected="true"]');
-      if (selected) {
-        discounts.push({
-          active: selected.getAttribute("data-discount-active") === "true",
-          type: selected.getAttribute("data-discount-type"),
-          value: parseFloat(selected.getAttribute("data-discount-value") || "0")
-        });
+  function calculateVariantPrice(variant) {
+    var base = getBasePrice();
+    var total = base + (variant.priceModifier || 0);
+    if (variant.discount && variant.discount.active) {
+      var disc = variant.discount;
+      var discounted;
+      if (disc.type === "percentage") {
+        discounted = Math.round(total * (1 - disc.value / 100));
+      } else {
+        discounted = Math.max(0, total - disc.value);
       }
-    });
-    return discounts;
+      var label = disc.type === "percentage"
+        ? uiText.percentOff.replace("{v}", disc.value)
+        : uiText.amountOff.replace("{v}", disc.value);
+      return { price: discounted, original: total, hasDiscount: true, label: label };
+    }
+    return { price: total, original: total, hasDiscount: false, label: "" };
   }
 
-  function calculatePrice(basePrice) {
-    var modifiers = getSelectedModifiers();
-    var optionDiscounts = getSelectedOptionDiscounts();
-    var total = basePrice;
-    modifiers.forEach(function(m) { total += m; });
-
-    var bestDiscount = null;
-    optionDiscounts.forEach(function(d) {
-      if (d.active && (!bestDiscount || d.value > bestDiscount.value)) bestDiscount = d;
-    });
-
-    var productDiscount = JSON.parse(document.getElementById("product-discount-data")?.textContent || "{}");
-    if (!bestDiscount && productDiscount.active) bestDiscount = productDiscount;
-
-    if (!bestDiscount) return { price: total, original: total, hasDiscount: false, label: "" };
-
-    var discounted;
-    if (bestDiscount.type === "percentage") {
-      discounted = Math.round(total * (1 - bestDiscount.value / 100));
+  function renderStock() {
+    var display = document.getElementById("stock-display");
+    if (!display) return;
+    var matched = findMatchingVariant();
+    if (matched) {
+      var stock = matched.stock || 0;
+      display.textContent = stock > 0 ? "Stock: " + stock : "Out of Stock";
+      display.className = "inline-flex items-center text-[0.62rem] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide "
+        + (stock > 0 ? "bg-success text-white" : "bg-sale text-white");
     } else {
-      discounted = Math.max(0, total - bestDiscount.value);
+      var selected = getSelectedOptions();
+      var keys = Object.keys(selected);
+      if (keys.length > 0) {
+        display.textContent = "";
+        display.className = "";
+      } else {
+        var total = parseInt(display.getAttribute("data-total-stock") || "0");
+        display.textContent = total > 0 ? "Stock: " + total : "";
+        display.className = total > 0
+          ? "inline-flex items-center text-[0.62rem] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide bg-success text-white"
+          : "";
+      }
+    }
+  }
+
+  function localizeSpec(obj) {
+    var locale = document.getElementById("specs-display")?.getAttribute("data-locale") || "en";
+    return obj && (obj[locale] || obj.en);
+  }
+
+  function renderSpecs() {
+    var display = document.getElementById("specs-display");
+    if (!display) return;
+    var matched = findMatchingVariant();
+    var specs;
+    if (matched && matched.specifications && matched.specifications.length > 0) {
+      specs = matched.specifications;
+    } else {
+      try {
+        var productData = JSON.parse(document.getElementById("product-data")?.getAttribute("data-product") || "{}");
+        specs = productData.specifications || [];
+      } catch { specs = []; }
     }
 
-    var label = bestDiscount.type === "percentage"
-      ? uiText.percentOff.replace("{v}", bestDiscount.value)
-      : uiText.amountOff.replace("{v}", bestDiscount.value);
+    if (specs.length === 0) {
+      display.innerHTML = "";
+      return;
+    }
 
-    return { price: discounted, original: total, hasDiscount: true, label: label };
+    var html = '<section><h2 class="text-lg font-bold mb-3">Specifications</h2><dl class="grid grid-cols-1 md:grid-cols-2 gap-2">';
+    for (var i = 0; i < specs.length; i++) {
+      var label = localizeSpec(specs[i].label);
+      var value = localizeSpec(specs[i].value);
+      html += '<div class="flex border-b border-border py-2"><dt class="font-medium text-text-2 w-1/3">' + label + '</dt><dd class="text-text-1 w-2/3">' + value + '</dd></div>';
+    }
+    html += '</dl></section>';
+    display.innerHTML = html;
   }
 
   function renderPrice() {
-    var btn = document.getElementById("add-to-cart-btn");
-    var basePrice = parseFloat(btn?.getAttribute("data-base-price") || "0");
-    var result = calculatePrice(basePrice);
     var display = document.getElementById("price-display");
+    var matched = findMatchingVariant();
+    if (!matched) {
+      var selected = getSelectedOptions();
+      var keys = Object.keys(selected);
+      if (keys.length > 0) {
+        display.innerHTML = '<span class="text-text-3 text-base font-normal">Combination not available</span>';
+      } else {
+        display.innerHTML = "NPR " + getBasePrice().toLocaleString();
+      }
+      return;
+    }
+    var result = calculateVariantPrice(matched);
     var html = "NPR " + result.price.toLocaleString();
     if (result.hasDiscount) {
       html += ' <span class="line-through text-text-3 font-normal text-base ml-1">NPR ' + result.original.toLocaleString() + "</span>";
@@ -265,7 +370,7 @@ for (const loc of ["en", "ne", "newa"] as const) {
       if (paramValue) {
         var options = group.querySelectorAll(".attr-option");
         for (var i = 0; i < options.length; i++) {
-          if (options[i].getAttribute("data-key") === paramValue) {
+          if (options[i].getAttribute("data-key") === paramValue && !options[i].disabled) {
             selectOption(options[i]);
             break;
           }
@@ -286,6 +391,21 @@ for (const loc of ["en", "ne", "newa"] as const) {
     }
   }
 
+  function getQtyMax() {
+    var input = document.getElementById("qty-input");
+    return parseInt(input?.getAttribute("max") || "99");
+  }
+
+  function updateQtyMax() {
+    var input = document.getElementById("qty-input");
+    if (!input) return;
+    var matched = findMatchingVariant();
+    var max = matched ? (matched.stock || 1) : 99;
+    input.setAttribute("max", String(max));
+    var val = parseInt(input.value) || 1;
+    if (val > max) input.value = String(max);
+  }
+
   window.__attrCtx = window.__attrCtx || { id: 0, abort: null };
   var _attrId = ++window.__attrCtx.id;
 
@@ -297,7 +417,11 @@ for (const loc of ["en", "ne", "newa"] as const) {
     document.querySelectorAll(".attr-option").forEach(function(btn) {
       btn.addEventListener("click", function() {
         selectOption(this);
+        filterOptions();
         renderPrice();
+        renderStock();
+        renderSpecs();
+        updateQtyMax();
         updateAddToCartState();
         updateURLParams();
       }, { signal: signal });
@@ -314,12 +438,14 @@ for (const loc of ["en", "ne", "newa"] as const) {
 
     if (qtyPlus) qtyPlus.addEventListener("click", function() {
       var val = parseInt(qtyInput.value) || 1;
-      if (val < 99) qtyInput.value = String(val + 1);
+      var max = getQtyMax();
+      if (val < max) qtyInput.value = String(val + 1);
     }, { signal: signal });
 
     if (qtyInput) qtyInput.addEventListener("change", function() {
       var val = parseInt(this.value) || 1;
-      this.value = String(Math.max(1, Math.min(99, val)));
+      var max = getQtyMax();
+      this.value = String(Math.max(1, Math.min(max, val)));
     }, { signal: signal });
 
     document.getElementById("add-to-cart-btn").addEventListener("click", function() {
@@ -333,33 +459,37 @@ for (const loc of ["en", "ne", "newa"] as const) {
       var productNameAll = JSON.parse(btn.getAttribute("data-product-name-all") || "{}");
       var productImage = btn.getAttribute("data-product-image") || "";
 
-      var result = calculatePrice(basePrice);
+      var matched = findMatchingVariant();
+      if (!matched) return;
+
+      var result = calculateVariantPrice(matched);
       var cart = getCart();
       var options = getSelectedOptions();
       var allLabels = getAllOptionLabels();
-      var modifiers = getSelectedModifiers();
+
+      var cartItem = {
+        slug: productSlug,
+        name: productName,
+        nameAll: productNameAll,
+        image: productImage,
+        images: matched.images || [],
+        selectedOptions: options,
+        selectedOptionsLabelsAll: allLabels,
+        variantKey: matched.key,
+        unitPrice: result.price,
+        originalUnitPrice: result.original,
+        hasDiscount: result.hasDiscount,
+        qty: qty
+      };
 
       var existing = cart.findIndex(function(c) {
-        return c.slug === productSlug && JSON.stringify(c.selectedOptions) === JSON.stringify(options);
+        return c.slug === productSlug && c.variantKey === matched.key;
       });
 
       if (existing >= 0) {
         cart[existing].qty += qty;
       } else {
-        cart.push({
-          slug: productSlug,
-          name: productName,
-          nameAll: productNameAll,
-          image: productImage,
-          images: getSelectedImages(),
-          selectedOptions: options,
-          selectedOptionsLabelsAll: allLabels,
-          selectedModifiers: modifiers,
-          unitPrice: result.price,
-          originalUnitPrice: result.original,
-          hasDiscount: result.hasDiscount,
-          qty: qty
-        });
+        cart.push(cartItem);
       }
 
       saveCart(cart);
@@ -377,12 +507,21 @@ for (const loc of ["en", "ne", "newa"] as const) {
     }, { signal: signal });
   }
 
+  function getAllOptionLabels() {
+    var raw = document.getElementById("add-to-cart-btn")?.getAttribute("data-attribute-labels") || "{}";
+    try { return JSON.parse(raw); } catch { return {}; }
+  }
+
   document.addEventListener("astro:page-load", function() {
     if (window.__attrCtx.id !== _attrId) return;
     if (!document.getElementById("add-to-cart-btn")) return;
     init();
     readURLParams();
+    filterOptions();
     renderPrice();
+    renderStock();
+    renderSpecs();
+    updateQtyMax();
     updateAddToCartState();
     updateCheckoutVisibility();
   });

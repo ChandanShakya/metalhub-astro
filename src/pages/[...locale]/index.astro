@@ -3,6 +3,7 @@ import { getCollection } from "astro:content";
 import OptimizedImage from "../../components/OptimizedImage.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getTranslations, locales, localizedPath } from "../../lib/i18n";
+import { getProductPriceRange, getSaleVariants } from "../../lib/pricing";
 
 export function getStaticPaths() {
     return locales.map((locale) => ({
@@ -16,28 +17,125 @@ const t = await getTranslations(locale);
 
 const products = await getCollection("products");
 const categories = await getCollection("categories");
+const materials = await getCollection("materials");
 const sortedCategories = categories.sort((a, b) => a.data.order - b.data.order);
-const featured = products.filter((p) => p.data.featured && p.data.inStock).slice(0, 4);
+const sortedMaterials = materials.sort((a, b) => a.data.order - b.data.order);
+const featured = products.filter((p) => p.data.featured && p.data.inStock).slice(0, 6);
+const saleItems = getSaleVariants(products, locale).slice(0, 4);
+
+const categoryCounts = new Map<string, number>();
+const materialCounts = new Map<string, number>();
+for (const p of products) {
+    categoryCounts.set(p.data.category, (categoryCounts.get(p.data.category) || 0) + 1);
+    materialCounts.set(p.data.material, (materialCounts.get(p.data.material) || 0) + 1);
+}
+
+function localizeName(obj: Record<string, string>): string {
+    return obj[locale as keyof typeof obj] || obj.en;
+}
+
+function getMaterialName(materialSlug: string): string {
+    const mat = sortedMaterials.find((m) => m.data.slug === materialSlug);
+    return mat ? localizeName(mat.data.name) : materialSlug;
+}
+
+function getCategoryName(catSlug: string): string {
+    const cat = sortedCategories.find((c) => c.data.slug === catSlug);
+    return cat ? localizeName(cat.data.name) : catSlug;
+}
+
+function getFeaturedStock(product: (typeof products)[number]): number {
+    if (product.data.variants && product.data.variants.length > 0) {
+        return product.data.variants.reduce((sum, v: { stock?: number }) => sum + (v.stock ?? 0), 0);
+    }
+    return product.data.stock ?? 0;
+}
+
+function getFeaturedPriceRange(product: (typeof products)[number]) {
+    const result = getProductPriceRange(product.data.basePrice, product.data.variants, product.data.discount);
+    return {
+        min: result.originalPrice,
+        minWithDiscount: result.price,
+        hasDiscount: result.hasDiscount,
+        discountLabel: result.discountLabel,
+        cheapestVariantParams: result.cheapestVariantParams,
+    };
+}
 ---
+
 <BaseLayout title={t("nav.home")} locale={locale}>
-  <section class="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700 text-white text-center py-16 px-4 md:py-20 md:px-6 relative overflow-hidden">
-    <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgb(180_83_9/0.15),transparent_60%),radial-gradient(circle_at_70%_80%,rgb(217_119_6/0.1),transparent_50%)]"></div>
-    <h1 class="text-3xl md:text-5xl font-extrabold mb-3 relative tracking-tight">{t("hero.title")}</h1>
-    <p class="text-base md:text-lg opacity-85 mb-7 relative max-w-xl mx-auto">{t("hero.subtitle")}</p>
-    <a href={localizedPath("/products/", locale)} class="inline-block bg-accent text-white py-3 px-8 rounded-xl font-bold text-base no-underline transition-[colors,transform] relative shadow-[0_4px_14px_rgb(180_83_9/0.3)] hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgb(180_83_9/0.35)] hover:text-white hover:bg-accent-light">{t("hero.cta")}</a>
+  <section class="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700 text-white">
+    <div class="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgb(180_83_9/0.12),transparent_50%),radial-gradient(circle_at_80%_70%,rgb(217_119_6/0.08),transparent_40%)]"></div>
+    <div class="relative container mx-auto px-4 py-14 md:py-20 text-center">
+      <p class="text-accent-light text-sm font-semibold uppercase tracking-widest mb-3">Metal Hub Nepal</p>
+      <h1 class="text-3xl md:text-5xl font-extrabold mb-3 tracking-tight">Handcrafted Metalware<br class="hidden sm:inline"><span class="text-accent-light"> from Kathmandu</span></h1>
+      <p class="text-base md:text-lg text-white/75 mb-8 max-w-xl mx-auto">Pure copper, brass &amp; bronze — kitchenware, puja items, statues and gifts, hand-finished by skilled artisans.</p>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 max-w-2xl mx-auto">
+        {sortedCategories.map((cat) => (
+          <a
+            href={localizedPath(`/products/?category=${cat.data.slug}`, locale)}
+            class="inline-flex flex-col items-center justify-center gap-1 border-2 border-white/20 text-white py-2.5 px-2 rounded-xl font-semibold text-xs no-underline transition-[colors,transform] hover:border-accent hover:bg-accent hover:-translate-y-0.5"
+          >
+            <span class="text-base leading-none">{cat.data.icon as string}</span>
+            <span>{localizeName(cat.data.name)}</span>
+            <span class="text-white/50 text-xs font-semibold leading-none">{categoryCounts.get(cat.data.slug) || 0}</span>
+          </a>
+        ))}
+      </div>
+      {sortedMaterials.length > 0 && (
+        <div class="mt-6 pt-5 border-t border-white/15">
+          <p class="text-white/50 text-xs uppercase tracking-widest font-semibold mb-3">Browse by Material</p>
+          <div class="grid grid-cols-3 gap-2.5 max-w-sm mx-auto">
+            {sortedMaterials.map((mat) => (
+              <a
+                href={localizedPath(`/products/?material=${mat.data.slug}`, locale)}
+                class="inline-flex flex-col items-center justify-center gap-1 border-2 border-white/20 text-white py-2.5 px-2 rounded-xl font-semibold text-xs no-underline transition-[colors,transform] hover:border-accent hover:bg-accent hover:-translate-y-0.5"
+              >
+                <span class="text-base leading-none">{mat.data.icon as string}</span>
+                <span>{localizeName(mat.data.name)}</span>
+                <span class="text-white/50 text-xs font-semibold leading-none">{materialCounts.get(mat.data.slug) || 0}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   </section>
 
-  {featured.length > 0 && (
-    <section class="py-8 container mx-auto px-4">
-      <h2 class="text-2xl font-bold mb-5">{t("products.featured")}</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
-        {featured.map((product, i) => (
-          <a href={localizedPath(`/products/${product.data.slug}/`, locale)} class="block bg-surface-2 border border-border rounded-xl overflow-hidden no-underline text-inherit transition-[colors,transform] duration-300 [perspective:800px] hover:-translate-y-1 hover:rotate-x-[1.5deg] hover:shadow-[0_20px_40px_-10px_rgb(15_23_42/0.15)]">
-            <OptimizedImage src={product.data.images[0] || "/images/products/placeholder.jpg"} alt={product.data.name[locale as keyof typeof product.data.name] || product.data.name.en} class="w-full h-48 md:h-64 object-contain bg-gradient-to-br from-surface-3 to-border" width={600} height={400} sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw" loading="eager" decoding="sync" fetchpriority={i === 0 ? "high" : undefined} />
-            <div class="p-4">
-              <h2 class="text-base font-semibold mb-1">{product.data.name[locale as keyof typeof product.data.name] || product.data.name.en}</h2>
-              <div class="text-xs text-text-3 mb-2">{t("products." + product.data.category) || product.data.category}</div>
-              <div class="font-bold text-base text-accent-dark">NPR {product.data.basePrice.toLocaleString()}</div>
+  {saleItems.length > 0 && (
+    <section class="py-6 container mx-auto px-4">
+      <div class="flex items-baseline justify-between mb-4">
+        <div>
+          <h2 class="text-xl md:text-2xl font-bold">Festival Special — Limited Time</h2>
+          <p class="text-text-3 text-xs md:text-sm mt-0.5">Handpicked deals on premium metalware</p>
+        </div>
+      </div>
+      <div class="flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar pb-2 -mx-4 px-4">
+        {saleItems.map((item) => (
+          <a
+            href={localizedPath(`/products/${item.product.slug}/${item.linkParams ? "?" + item.linkParams : ""}`, locale)}
+            class="snap-start shrink-0 w-56 md:w-64 bg-surface-2 border border-border rounded-xl overflow-hidden no-underline text-inherit transition-[colors,transform] duration-300 hover:-translate-y-1 hover:shadow-[0_12px_30px_-8px_rgb(15_23_42/0.12)]"
+          >
+            <div class="relative">
+              <OptimizedImage src={item.product.image || "/images/products/placeholder.jpg"} alt={localizeName(item.product.name)} class="w-full h-36 md:h-44 object-contain bg-gradient-to-br from-surface-3 to-border" width={300} height={225} sizes="256px" />
+              <span class="absolute top-2 left-2 bg-sale text-white text-[0.6rem] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">Limited Time</span>
+            </div>
+            <div class="p-3 md:p-4">
+              <div class="text-[0.65rem] text-accent font-semibold uppercase tracking-wide mb-0.5">{getCategoryName(item.product.category)}</div>
+              <h3 class="text-sm md:text-base font-semibold leading-tight mb-1">{localizeName(item.product.name)}</h3>
+              {item.attributeLabels && (
+                <p class="text-[0.65rem] text-text-3 mb-1.5">{Object.entries(item.attributeLabels).map(([, v]) => v).join(" · ")}</p>
+              )}
+              <div class="font-bold text-sm md:text-base text-accent-dark">
+                NPR {item.price.toLocaleString()}
+                <span class="line-through text-text-3 font-normal text-xs ml-1">NPR {item.originalPrice.toLocaleString()}</span>
+                <span class="inline-flex items-center bg-sale text-white text-[0.55rem] font-bold px-1 py-0.5 rounded ml-1">{item.discountLabel}</span>
+              </div>
+              {item.stock > 0 ? (
+                <p class="text-[0.6rem] text-success mt-0.5">{t("products.inStock").replace("{v}", String(item.stock))}</p>
+              ) : (
+                <p class="text-[0.6rem] text-sale mt-0.5">{t("products.outOfStock")}</p>
+              )}
             </div>
           </a>
         ))}
@@ -45,19 +143,52 @@ const featured = products.filter((p) => p.data.featured && p.data.inStock).slice
     </section>
   )}
 
-  {sortedCategories.length > 0 && (
-    <section class="py-8 container mx-auto px-4">
-      <h2 class="text-2xl font-bold mb-5">{t("products.shopByCategory")}</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
-        {sortedCategories.map((cat) => (
-          <a href={localizedPath(`/products/?category=${cat.data.slug}`, locale)} class="block bg-surface-2 border border-border rounded-xl overflow-hidden no-underline text-inherit transition-[colors,transform] duration-300 hover:-translate-y-1 hover:shadow-[0_20px_40px_-10px_rgb(15_23_42/0.15)] cursor-pointer">
-            <div class="text-center py-8 px-4">
-              <div class="text-5xl leading-none">{cat.data.icon}</div>
-              <p class="mt-2 font-semibold text-base">{cat.data.name[locale as keyof typeof cat.data.name] || cat.data.name.en}</p>
-            </div>
-          </a>
-        ))}
+  {featured.length > 0 && (
+    <section class="py-6 container mx-auto px-4">
+      <h2 class="text-xl md:text-2xl font-bold mb-4">{t("products.featured")}</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+        {featured.map((product) => {
+          const materialName = getMaterialName(product.data.material);
+          const priceInfo = getFeaturedPriceRange(product);
+          const hasVariants = product.data.variants && product.data.variants.length > 0;
+          const fStock = getFeaturedStock(product);
+          return (
+            <a
+              href={localizedPath(priceInfo.cheapestVariantParams ? `/products/${product.data.slug}/?${priceInfo.cheapestVariantParams}` : `/products/${product.data.slug}/`, locale)}
+              class="flex flex-col bg-surface-2 border border-border rounded-xl overflow-hidden no-underline text-inherit transition-[colors,transform] duration-300 [perspective:800px] hover:-translate-y-1 hover:rotate-x-[1.5deg] hover:shadow-[0_16px_40px_-10px_rgb(15_23_42/0.12)]"
+            >
+              <OptimizedImage
+                src={product.data.images[0] || "/images/products/placeholder.jpg"}
+                alt={localizeName(product.data.name)}
+                class="w-full h-48 md:h-56 object-contain bg-gradient-to-br from-surface-3 to-border"
+                width={600} height={400}
+                sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+              />
+              <div class="flex-1 flex flex-col p-4">
+                <div class="text-[0.65rem] text-accent font-semibold uppercase tracking-wide mb-0.5">{materialName}</div>
+                <h3 class="text-sm md:text-base font-semibold leading-tight mb-1">{localizeName(product.data.name)}</h3>
+                <div class="mt-auto font-bold text-sm md:text-base text-accent-dark">
+                  {hasVariants && <span class="text-text-3 font-normal text-xs">from </span>}
+                  NPR {priceInfo.minWithDiscount.toLocaleString()}
+                  {priceInfo.hasDiscount && (
+                    <>
+                      <span class="line-through text-text-3 font-normal text-xs ml-1">NPR {priceInfo.min.toLocaleString()}</span>
+                      <span class="inline-flex items-center bg-sale text-white text-[0.55rem] font-bold px-1 py-0.5 rounded ml-1">{priceInfo.discountLabel}</span>
+                    </>
+                  )}
+                </div>
+                {fStock > 0 ? (
+                  <p class="text-[0.6rem] text-success mt-0.5">{t("products.inStock").replace("{v}", String(fStock))}</p>
+                ) : (
+                  <p class="text-[0.6rem] text-sale mt-0.5">{t("products.outOfStock")}</p>
+                )}
+              </div>
+            </a>
+          );
+        })}
       </div>
     </section>
   )}
+
+
 </BaseLayout>
