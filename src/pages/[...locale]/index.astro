@@ -31,9 +31,9 @@ const featured = products.filter((p) => p.data.featured && p.data.inStock).slice
     <section class="py-8 container mx-auto px-4">
       <h2 class="text-2xl font-bold mb-5">{t("products.featured")}</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
-        {featured.map((product) => (
+        {featured.map((product, i) => (
           <a href={localizedPath(`/products/${product.data.slug}/`, locale)} class="block bg-surface-2 border border-border rounded-xl overflow-hidden no-underline text-inherit transition-[colors,transform] duration-300 [perspective:800px] hover:-translate-y-1 hover:rotate-x-[1.5deg] hover:shadow-[0_20px_40px_-10px_rgb(15_23_42/0.15)]">
-            <OptimizedImage src={product.data.images[0] || "/images/products/placeholder.jpg"} alt={product.data.name[locale as keyof typeof product.data.name] || product.data.name.en} class="w-full h-48 md:h-64 object-contain bg-gradient-to-br from-surface-3 to-border" width={600} height={400} sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw" loading="eager" decoding="sync" />
+            <OptimizedImage src={product.data.images[0] || "/images/products/placeholder.jpg"} alt={product.data.name[locale as keyof typeof product.data.name] || product.data.name.en} class="w-full h-48 md:h-64 object-contain bg-gradient-to-br from-surface-3 to-border" width={600} height={400} sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw" loading="eager" decoding="sync" fetchpriority={i === 0 ? "high" : undefined} />
             <div class="p-4">
               <h2 class="text-base font-semibold mb-1">{product.data.name[locale as keyof typeof product.data.name] || product.data.name.en}</h2>
               <div class="text-xs text-text-3 mb-2">{t("products." + product.data.category) || product.data.category}</div>
