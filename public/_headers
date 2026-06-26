@@ -5,9 +5,9 @@
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 
-# Images
+# Images - long cache (versions change via filename when regenerated)
 /images/*
-  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+  Cache-Control: public, max-age=31536000, immutable
 
 # Fonts
 /fonts/*
@@ -28,6 +28,14 @@
 /assets/*.css
   Cache-Control: public, max-age=31536000, immutable
 
-# Default - moderate cache
-/*
+# Sitemap - revalidate frequently
+/sitemap*.xml
   Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+
+# Robots - revalidate frequently
+/robots.txt
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+
+# Default - long cache (immutable assets are already handled above)
+/*
+  Cache-Control: public, max-age=31536000, immutable
