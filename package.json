@@ -5,8 +5,9 @@
     "scripts": {
         "dev": "astro dev",
         "optimize-images": "node scripts/optimize-images.mjs",
-        "build": "node scripts/optimize-images.mjs && astro build",
-        "preview": "node scripts/optimize-images.mjs && astro build && wrangler dev",
+        "generate-og-image": "node scripts/generate-og-image.mjs",
+        "build": "node scripts/optimize-images.mjs && node scripts/generate-og-manifest.mjs && astro build",
+        "preview": "node scripts/optimize-images.mjs && node scripts/generate-og-manifest.mjs && astro build && wrangler dev",
         "astro": "astro",
         "lint": "biome check .",
         "lint:fix": "biome check --write .",

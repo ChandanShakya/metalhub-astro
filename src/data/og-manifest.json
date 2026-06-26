@@ -1,0 +1,50 @@
+{
+    "brass-buddha": {
+        "images": ["/images/products/buddha.jpg"],
+        "variants": {
+            "small-polished": {
+                "images": []
+            },
+            "small-antique": {
+                "images": []
+            },
+            "medium-polished": {
+                "images": []
+            },
+            "medium-antique": {
+                "images": []
+            },
+            "large-polished": {
+                "images": []
+            },
+            "large-antique": {
+                "images": []
+            }
+        }
+    },
+    "bronze-bowl": {
+        "images": ["/images/products/chares.jpg"],
+        "variants": {
+            "medium": {
+                "images": []
+            },
+            "large": {
+                "images": []
+            }
+        }
+    },
+    "copper-tumbler": {
+        "images": ["/images/products/tumbler.jpg"],
+        "variants": {
+            "small": {
+                "images": []
+            },
+            "medium": {
+                "images": []
+            },
+            "large": {
+                "images": []
+            }
+        }
+    }
+}
