@@ -72,7 +72,7 @@ const t = await getTranslations(locale);
       const options = Object.entries(item.selectedOptions || {}).map(([k,v]) => tl(k) + ": " + tl(v)).join(", ");
       var imgSrc = (item.images && item.images.length > 0 ? item.images[0] : "") || item.image || "";
       var imgHtml = imgSrc
-        ? '<img src="' + imgSrc + '" alt="' + itemName + '" class="w-16 h-16 object-cover rounded-lg shrink-0" loading="lazy" decoding="async" />'
+        ? '<img src="' + imgSrc + '" alt="' + itemName + '" width="64" height="64" class="w-16 h-16 object-cover rounded-lg shrink-0" loading="lazy" decoding="async" />'
         : '<div class="w-16 h-16 rounded-lg bg-gradient-to-br from-surface-3 to-border shrink-0 flex items-center justify-center text-text-3 text-xs">' + uiText.noImg + '</div>';
       var loc = getLocale();
       var productHref = (loc === "en" ? "/products/" : "/" + loc + "/products/") + item.slug + "/" + (Object.keys(item.selectedOptions || {}).length > 0 ? "?" + new URLSearchParams(item.selectedOptions).toString() : "");
