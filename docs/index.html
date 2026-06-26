@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Content management guide for MetalHub shop owners. Learn to manage products, categories, and site settings through the CMS.">
+    <title>MetalHub — Content Management Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --copper: #b87333;
+            --copper-light: #d4956b;
+            --copper-dark: #8b5a2b;
+            --copper-deep: #6d4420;
+            --copper-50: rgba(184, 115, 51, 0.08);
+            --copper-100: rgba(184, 115, 51, 0.15);
+            --slate-900: #0f172a;
+            --slate-800: #1e293b;
+            --slate-700: #334155;
+            --slate-600: #475569;
+            --slate-500: #64748b;
+            --slate-300: #cbd5e1;
+            --slate-200: #e2e8f0;
+            --slate-100: #f1f5f9;
+            --slate-50: #f8fafc;
+            --white: #ffffff;
+            --blue-700: #1d4ed8;
+            --blue-600: #2563eb;
+            --blue-50: #eff6ff;
+            --green-700: #15803d;
+            --green-600: #16a34a;
+            --green-50: #f0fdf4;
+            --amber-700: #b45309;
+            --amber-600: #d97706;
+            --amber-50: #fffbeb;
+            --font-serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+            --radius: 10px;
+            --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        html { scroll-behavior: smooth; scroll-padding-top: 4rem; }
+
+        body {
+            font-family: var(--font-sans);
+            font-size: 15px;
+            line-height: 1.7;
+            color: var(--slate-800);
+            background: var(--slate-50);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* ── SKIP NAV ── */
+        .skip-link {
+            position: absolute;
+            top: -100%;
+            left: 1rem;
+            background: var(--slate-900);
+            color: var(--white);
+            padding: 0.5rem 1rem;
+            border-radius: 0 0 6px 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-decoration: none;
+            z-index: 200;
+            transition: top var(--transition);
+        }
+
+        .skip-link:focus {
+            top: 0;
+            outline: 2px solid var(--copper);
+            outline-offset: 2px;
+        }
+
+        /* ── NAV ── */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid var(--slate-200);
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            height: 3.5rem;
+            backdrop-filter: blur(12px);
+            background: rgba(255,255,255,0.92);
+        }
+
+        nav .logo {
+            font-family: var(--font-serif);
+            font-weight: 600;
+            font-size: 1.25rem;
+            color: var(--copper-dark);
+            letter-spacing: -0.01em;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        nav .divider {
+            width: 1px;
+            height: 1.25rem;
+            background: var(--slate-300);
+            flex-shrink: 0;
+        }
+
+        nav .links {
+            display: flex;
+            gap: 0.25rem;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        nav .links::-webkit-scrollbar { display: none; }
+
+        nav a {
+            color: var(--slate-600);
+            text-decoration: none;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            padding: 0.35rem 0.65rem;
+            border-radius: 6px;
+            transition: all var(--transition);
+            white-space: nowrap;
+        }
+
+        nav a:hover {
+            color: var(--slate-900);
+            background: var(--slate-100);
+        }
+
+        nav a.active {
+            color: var(--copper-dark);
+            background: var(--copper-50);
+            font-weight: 600;
+        }
+
+        /* ── HERO ── */
+        .hero {
+            background: linear-gradient(165deg, var(--slate-900) 0%, var(--slate-800) 50%, var(--copper-dark) 100%);
+            color: var(--white);
+            padding: 5rem 2rem 4rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -20%;
+            width: 140%;
+            height: 200%;
+            background: radial-gradient(ellipse at 30% 50%, rgba(184,115,51,0.12) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.18);
+            padding: 0.3rem 0.85rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+            color: var(--white);
+        }
+
+        .hero h1 {
+            font-family: var(--font-serif);
+            font-size: clamp(2rem, 5vw, 3.25rem);
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            line-height: 1.15;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .hero p {
+            font-size: 1.05rem;
+            max-width: 480px;
+            margin: 0 auto;
+            line-height: 1.65;
+            position: relative;
+            color: var(--slate-200);
+        }
+
+        /* ── MAIN ── */
+        main {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 3.5rem 1.5rem 5rem;
+        }
+
+        section {
+            margin-bottom: 3.5rem;
+            scroll-margin-top: 4.5rem;
+        }
+
+        /* ── SECTION HEADERS ── */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .section-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            background: var(--copper-50);
+            color: var(--copper-dark);
+            border: 1px solid var(--copper-100);
+        }
+
+        h2 {
+            font-family: var(--font-serif);
+            font-size: 1.65rem;
+            font-weight: 600;
+            color: var(--slate-900);
+            letter-spacing: -0.015em;
+            line-height: 1.2;
+        }
+
+        h3 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin: 1.75rem 0 0.6rem;
+            color: var(--slate-800);
+        }
+
+        p { margin-bottom: 0.85rem; color: var(--slate-700); }
+
+        ul, ol { margin-bottom: 0.85rem; padding-left: 1.25rem; }
+        li { margin-bottom: 0.35rem; color: var(--slate-700); }
+        li::marker { color: var(--copper-dark); }
+
+        code {
+            font-family: 'SF Mono', 'Fira Code', Menlo, Consolas, monospace;
+            font-size: 0.825em;
+            background: var(--slate-100);
+            padding: 0.15em 0.4em;
+            border-radius: 4px;
+            color: var(--copper-dark);
+            border: 1px solid var(--slate-200);
+        }
+
+        /* ── STEPS ── */
+        .steps {
+            display: flex;
+            flex-direction: column;
+            gap: 0.625rem;
+            margin: 1rem 0;
+        }
+
+        .step {
+            background: var(--white);
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius);
+            padding: 1rem 1.25rem 1rem 3.25rem;
+            position: relative;
+            transition: all var(--transition);
+            cursor: default;
+        }
+
+        .step:hover {
+            border-color: var(--copper-100);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+
+        .step::before {
+            content: attr(data-step);
+            position: absolute;
+            left: 0.875rem;
+            top: 1rem;
+            width: 1.5rem;
+            height: 1.5rem;
+            background: var(--copper-deep);
+            color: var(--white);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .step + .step::after {
+            content: '';
+            position: absolute;
+            left: calc(0.875rem + 0.7rem);
+            top: -0.625rem;
+            width: 1px;
+            height: 0.625rem;
+            background: var(--slate-300);
+        }
+
+        .step h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.2rem;
+            color: var(--slate-900);
+        }
+
+        .step p { font-size: 0.875rem; margin-bottom: 0; color: var(--slate-600); }
+
+        /* ── CALLOUTS ── */
+        .callout {
+            border-radius: var(--radius);
+            padding: 1rem 1.25rem;
+            margin: 1.25rem 0;
+            font-size: 0.9rem;
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-start;
+        }
+
+        .callout-icon {
+            flex-shrink: 0;
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-top: 0.1rem;
+        }
+
+        .callout-tip {
+            background: var(--blue-50);
+            border: 1px solid rgba(37, 99, 235, 0.15);
+            color: var(--slate-700);
+        }
+
+        .callout-tip .callout-icon { color: var(--blue-700); }
+
+        .callout-warn {
+            background: var(--amber-50);
+            border: 1px solid rgba(217, 119, 6, 0.15);
+            color: var(--slate-700);
+        }
+
+        .callout-warn .callout-icon { color: var(--amber-700); }
+
+        .callout-success {
+            background: var(--green-50);
+            border: 1px solid rgba(22, 163, 74, 0.15);
+            color: var(--slate-700);
+        }
+
+        .callout-success .callout-icon { color: var(--green-700); }
+
+        .callout strong { color: var(--slate-900); font-weight: 600; }
+
+        /* ── TABLES ── */
+        .table-wrap {
+            background: var(--white);
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius);
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 0.65rem 1rem;
+        }
+
+        th {
+            background: var(--slate-50);
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--slate-600);
+            border-bottom: 1px solid var(--slate-200);
+        }
+
+        td {
+            border-bottom: 1px solid var(--slate-100);
+            color: var(--slate-700);
+        }
+
+        tr:last-child td { border-bottom: none; }
+
+        td strong { color: var(--slate-900); }
+
+        /* ── GRID CARDS ── */
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin: 1.25rem 0;
+        }
+
+        .card {
+            background: var(--white);
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius);
+            padding: 1.25rem;
+            transition: all var(--transition);
+        }
+
+        .card:hover {
+            border-color: var(--copper-100);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .card-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.5rem;
+            height: 1.5rem;
+            background: var(--copper-deep);
+            color: var(--white);
+            border-radius: 50%;
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-bottom: 0.6rem;
+        }
+
+        .card h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.35rem;
+            color: var(--slate-900);
+        }
+
+        .card p {
+            font-size: 0.825rem;
+            color: var(--slate-600);
+            margin-bottom: 0;
+            line-height: 1.55;
+        }
+
+        /* ── QUICK LINKS ── */
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.625rem;
+            margin: 1.5rem 0 0;
+        }
+
+        .quick-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1.25rem 0.75rem;
+            background: var(--white);
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius);
+            text-decoration: none;
+            color: var(--slate-700);
+            transition: all var(--transition);
+            text-align: center;
+        }
+
+        .quick-link:hover {
+            border-color: var(--copper);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+            color: var(--copper-dark);
+        }
+
+        .quick-link-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            background: var(--copper-50);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition);
+            color: var(--copper-dark);
+        }
+
+        .quick-link:hover .quick-link-icon {
+            background: var(--copper);
+            color: var(--white);
+        }
+
+        .quick-link span {
+            font-size: 0.8125rem;
+            font-weight: 500;
+        }
+
+        /* ── FLOW DIAGRAM ── */
+        .flow {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 1.25rem 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .flow-step {
+            background: var(--white);
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius);
+            padding: 0.75rem 1rem;
+            text-align: center;
+            min-width: 100px;
+            transition: all var(--transition);
+        }
+
+        .flow-step:hover {
+            border-color: var(--copper-100);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .flow-step strong {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--slate-900);
+        }
+
+        .flow-step small {
+            font-size: 0.7rem;
+            color: var(--slate-600);
+        }
+
+        .flow-arrow {
+            color: var(--slate-500);
+            flex-shrink: 0;
+        }
+
+        /* ── FOOTER ── */
+        footer {
+            text-align: center;
+            padding: 2.5rem 2rem;
+            border-top: 1px solid var(--slate-200);
+            color: var(--slate-600);
+            font-size: 0.8rem;
+            background: var(--white);
+        }
+
+        footer .brand {
+            font-family: var(--font-serif);
+            font-weight: 600;
+            color: var(--copper-dark);
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 640px) {
+            nav { padding: 0 1rem; gap: 0.75rem; }
+            .hero { padding: 3.5rem 1.5rem 2.5rem; }
+            .hero h1 { font-size: 1.75rem; }
+            main { padding: 2rem 1rem 3rem; }
+            .grid { grid-template-columns: 1fr; }
+            .quick-links { grid-template-columns: 1fr 1fr; }
+            .flow { gap: 0.35rem; }
+            .flow-step { min-width: 70px; padding: 0.5rem 0.6rem; }
+            .flow-step strong { font-size: 0.7rem; }
+            .flow-step small { font-size: 0.6rem; }
+        }
+
+        @media (max-width: 380px) {
+            .quick-links { grid-template-columns: 1fr; }
+        }
+
+        /* ── REDUCED MOTION ── */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+            html { scroll-behavior: auto; }
+        }
+
+        /* ── FOCUS STATES ── */
+        a:focus-visible, button:focus-visible {
+            outline: 2px solid var(--copper-dark);
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<nav aria-label="Main navigation">
+    <span class="logo" aria-hidden="true">MetalHub</span>
+    <span class="divider" aria-hidden="true"></span>
+    <div class="links" role="list">
+        <a href="#getting-started" role="listitem">Getting Started</a>
+        <a href="#products" role="listitem">Products</a>
+        <a href="#categories" role="listitem">Categories</a>
+        <a href="#materials" role="listitem">Materials</a>
+        <a href="#settings" role="listitem">Settings</a>
+        <a href="#publishing" role="listitem">Publishing</a>
+        <a href="#tips" role="listitem">Tips</a>
+    </div>
+</nav>
+
+<header class="hero" role="banner">
+    <div class="hero-badge">Content Management Guide</div>
+    <h1>Manage Your Store</h1>
+    <p>Everything you need to update products, categories, and settings on your MetalHub store. No technical skills required.</p>
+</header>
+
+<main id="main-content">
+
+<section id="getting-started" aria-labelledby="heading-getting-started">
+    <div class="section-header">
+        <div class="section-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        </div>
+        <h2 id="heading-getting-started">Getting Started</h2>
+    </div>
+
+    <p>Your store is managed through a simple web interface called the CMS. When you save changes, the website updates automatically within 1-2 minutes.</p>
+
+    <div class="steps" role="list" aria-label="Steps to access the CMS">
+        <div class="step" data-step="1" role="listitem">
+            <h4>Open the admin page</h4>
+            <p>Go to <code>yourdomain.com/admin</code> in your web browser and bookmark it.</p>
+        </div>
+        <div class="step" data-step="2" role="listitem">
+            <h4>Sign in with GitHub</h4>
+            <p>Use your GitHub account credentials. If you don't have access, ask your developer to set it up.</p>
+        </div>
+        <div class="step" data-step="3" role="listitem">
+            <h4>You're in</h4>
+            <p>You'll see a dashboard with collections on the left: Products, Categories, Materials, Translations, and Site Settings.</p>
+        </div>
+    </div>
+
+    <div class="callout callout-tip" role="note">
+        <svg class="callout-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <div><strong>Bookmark this page.</strong> You'll visit it every time you need to update your store.</div>
+    </div>
+
+    <h3>Quick Navigation</h3>
+    <div class="quick-links" role="list" aria-label="Quick navigation links">
+        <a href="#products" class="quick-link" role="listitem" aria-label="Jump to Products section">
+            <div class="quick-link-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            </div>
+            <span>Products</span>
+        </a>
+        <a href="#categories" class="quick-link" role="listitem" aria-label="Jump to Categories section">
+            <div class="quick-link-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
+            </div>
+            <span>Categories</span>
+        </a>
+        <a href="#settings" class="quick-link" role="listitem" aria-label="Jump to Settings section">
+            <div class="quick-link-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+            </div>
+            <span>Settings</span>
+        </a>
+    </div>
+</section>
+
+<section id="products" aria-labelledby="heading-products">
+    <div class="section-header">
+        <div class="section-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        </div>
+        <h2 id="heading-products">Managing Products</h2>
+    </div>
+
+    <p>Products are the core of your store. Each product has a name, description, images, pricing, and optional variations.</p>
+
+    <h3>Adding a New Product</h3>
+    <div class="steps" role="list" aria-label="Steps to add a new product">
+        <div class="step" data-step="1" role="listitem">
+            <h4>Click "Products" then "New Product"</h4>
+            <p>Find Products in the left sidebar and click the "New Product" button.</p>
+        </div>
+        <div class="step" data-step="2" role="listitem">
+            <h4>Fill in the name</h4>
+            <p>Enter the product name in English (required), Nepali, and Newari. The other languages can be filled in later.</p>
+        </div>
+        <div class="step" data-step="3" role="listitem">
+            <h4>Write a description</h4>
+            <p>Describe the product in all three languages. Be specific about material, craftsmanship, and uses.</p>
+        </div>
+        <div class="step" data-step="4" role="listitem">
+            <h4>Upload images</h4>
+            <p>Click "Add Image" to upload photos. The first image becomes the main one. Customers can click through a gallery.</p>
+        </div>
+        <div class="step" data-step="5" role="listitem">
+            <h4>Set the price</h4>
+            <p>Enter the base price in Nepali Rupees (NPR). This is the starting price before any attribute changes.</p>
+        </div>
+        <div class="step" data-step="6" role="listitem">
+            <h4>Choose category and material</h4>
+            <p>Select the category (e.g., Kitchenware) and material (Copper, Brass, or Bronze) from the dropdown.</p>
+        </div>
+        <div class="step" data-step="7" role="listitem">
+            <h4>Click "Publish"</h4>
+            <p>Your product goes live after the site rebuilds (1-2 minutes).</p>
+        </div>
+    </div>
+
+    <h3>Product Fields Reference</h3>
+    <div class="table-wrap" role="region" aria-label="Product fields reference table" tabindex="0">
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Field</th>
+                    <th scope="col">Required</th>
+                    <th scope="col">Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Name</strong></td>
+                    <td>Yes (English)</td>
+                    <td>Product name in all three languages</td>
+                </tr>
+                <tr>
+                    <td><strong>Slug</strong></td>
+                    <td>Yes</td>
+                    <td>URL identifier (auto-generated from English name)</td>
+                </tr>
+                <tr>
+                    <td><strong>Description</strong></td>
+                    <td>No</td>
+                    <td>Product description in all three languages</td>
+                </tr>
+                <tr>
+                    <td><strong>Category</strong></td>
+                    <td>Yes</td>
+                    <td>Select from existing categories</td>
+                </tr>
+                <tr>
+                    <td><strong>Material</strong></td>
+                    <td>Yes</td>
+                    <td>copper, brass, or bronze</td>
+                </tr>
+                <tr>
+                    <td><strong>Images</strong></td>
+                    <td>Yes</td>
+                    <td>One or more product photos</td>
+                </tr>
+                <tr>
+                    <td><strong>Base Price (NPR)</strong></td>
+                    <td>Yes</td>
+                    <td>Starting price in Nepali Rupees</td>
+                </tr>
+                <tr>
+                    <td><strong>In Stock</strong></td>
+                    <td>No</td>
+                    <td>Toggle off to mark out of stock (default: on)</td>
+                </tr>
+                <tr>
+                    <td><strong>Featured</strong></td>
+                    <td>No</td>
+                    <td>Show on homepage (default: off)</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>Variants (Optional)</h3>
+    <p>Variants let you offer different sizes, finishes, or styles of the same product. Each variant can have its own price, discount, stock status, and images.</p>
+
+    <div class="callout callout-tip" role="note">
+        <svg class="callout-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <div><strong>Example:</strong> A copper water jug in Small, Medium, and Large. Create one "Size" attribute group with three options, then three variants — each with its own price modifier.</div>
+    </div>
+
+    <h3>Attribute Groups</h3>
+    <p>Attribute groups define the options customers can choose:</p>
+    <ul>
+        <li><strong>Group Name</strong> — e.g., "Size", "Finish", "Color" (in all three languages)</li>
+        <li><strong>Options</strong> — e.g., "Small", "Medium", "Large" (each in all three languages)</li>
+    </ul>
+
+    <h3>Variant Fields</h3>
+    <div class="table-wrap" role="region" aria-label="Variant fields reference table" tabindex="0">
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Field</th>
+                    <th scope="col">Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Key</strong></td>
+                    <td>Unique ID (e.g., "small-polished")</td>
+                </tr>
+                <tr>
+                    <td><strong>Attribute Values</strong></td>
+                    <td>Which group + option this variant represents</td>
+                </tr>
+                <tr>
+                    <td><strong>Price Modifier</strong></td>
+                    <td>Added to the base price (can be negative)</td>
+                </tr>
+                <tr>
+                    <td><strong>Discount</strong></td>
+                    <td>Optional variant-specific discount</td>
+                </tr>
+                <tr>
+                    <td><strong>In Stock</strong></td>
+                    <td>Toggle stock per variant</td>
+                </tr>
+                <tr>
+                    <td><strong>Images</strong></td>
+                    <td>Optional images that replace the product gallery for this variant</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>Discounts</h3>
+    <p>Set discounts at two levels:</p>
+    <ul>
+        <li><strong>Product-level</strong> — fallback when no variant discount is active</li>
+        <li><strong>Variant-level</strong> — overrides the product discount for that variant</li>
+    </ul>
+    <p>Discounts can be <strong>percentage</strong> (e.g., 15% off) or <strong>flat</strong> (e.g., 500 NPR off). Toggle "Active" to enable.</p>
+
+    <h3>Social Media Embeds</h3>
+    <p>Each product can have Facebook, Instagram, or TikTok embeds. To add one:</p>
+    <ol>
+        <li>Go to the post on the social platform</li>
+        <li>Click Share, then "Embed"</li>
+        <li>Copy the embed code</li>
+        <li>Paste it into the "Embed Code" field in the CMS</li>
+    </ol>
+</section>
+
+<section id="categories" aria-labelledby="heading-categories">
+    <div class="section-header">
+        <div class="section-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
+        </div>
+        <h2 id="heading-categories">Managing Categories</h2>
+    </div>
+
+    <p>Categories group your products (e.g., Kitchenware, Puja Items, Home Decor). Customers use these to filter products.</p>
+
+    <h3>Adding a Category</h3>
+    <div class="steps" role="list" aria-label="Steps to add a category">
+        <div class="step" data-step="1" role="listitem">
+            <h4>Click "Categories" then "New Category"</h4>
+        </div>
+        <div class="step" data-step="2" role="listitem">
+            <h4>Fill in the name</h4>
+            <p>Enter the category name in all three languages.</p>
+        </div>
+        <div class="step" data-step="3" role="listitem">
+            <h4>Set the slug</h4>
+            <p>A URL-friendly identifier (e.g., "kitchenware"). Must match exactly when assigning products.</p>
+        </div>
+        <div class="step" data-step="4" role="listitem">
+            <h4>Choose an icon</h4>
+            <p>Pick an emoji to represent the category. Shows on the homepage and category pages.</p>
+        </div>
+        <div class="step" data-step="5" role="listitem">
+            <h4>Set the display order</h4>
+            <p>Lower numbers appear first. Use increments of 10 (10, 20, 30) for easy reordering.</p>
+        </div>
+        <div class="step" data-step="6" role="listitem">
+            <h4>Optional: image, description, promoted</h4>
+            <p>Add a banner image, description, or toggle "Promoted" to show in Hot Topics on the homepage.</p>
+        </div>
+    </div>
+
+    <h3>Category Fields Reference</h3>
+    <div class="table-wrap" role="region" aria-label="Category fields reference table" tabindex="0">
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Field</th>
+                    <th scope="col">Required</th>
+                    <th scope="col">Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Name</strong></td>
+                    <td>Yes</td>
+                    <td>Category name in all three languages</td>
+                </tr>
+                <tr>
+                    <td><strong>Slug</strong></td>
+                    <td>Yes</td>
+                    <td>URL-friendly identifier</td>
+                </tr>
+                <tr>
+                    <td><strong>Icon</strong></td>
+                    <td>No</td>
+                    <td>Emoji for the category</td>
+                </tr>
+                <tr>
+                    <td><strong>Order</strong></td>
+                    <td>No</td>
+                    <td>Display order (lower = first)</td>
+                </tr>
+                <tr>
+                    <td><strong>Image</strong></td>
+                    <td>No</td>
+                    <td>Banner image for homepage</td>
+                </tr>
+                <tr>
+                    <td><strong>Description</strong></td>
+                    <td>No</td>
+                    <td>Brief description in all three languages</td>
+                </tr>
+                <tr>
+                    <td><strong>Promoted</strong></td>
+                    <td>No</td>
+                    <td>Show in "Hot Topics" on homepage</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section id="materials" aria-labelledby="heading-materials">
+    <div class="section-header">
+        <div class="section-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+        </div>
+        <h2 id="heading-materials">Managing Materials</h2>
+    </div>
+
+    <p>Materials define what your products are made of (Copper, Brass, Bronze). Each has a name, icon, and display order.</p>
+
+    <div class="steps" role="list" aria-label="Steps to add a material">
+        <div class="step" data-step="1" role="listitem">
+            <h4>Click "Materials" then "New Material"</h4>
+        </div>
+        <div class="step" data-step="2" role="listitem">
+            <h4>Fill in the name in all three languages</h4>
+        </div>
+        <div class="step" data-step="3" role="listitem">
+            <h4>Set the slug</h4>
+            <p>Must match exactly: <code>copper</code>, <code>brass</code>, or <code>bronze</code>.</p>
+        </div>
+        <div class="step" data-step="4" role="listitem">
+            <h4>Set the icon and order</h4>
+            <p>An emoji and display order (lower numbers first).</p>
+        </div>
+    </div>
+</section>
+
+<section id="settings" aria-labelledby="heading-settings">
+    <div class="section-header">
+        <div class="section-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+        <h2 id="heading-settings">Site Settings</h2>
+    </div>
+
+    <p>These control how customers reach you.</p>
+
+    <div class="table-wrap" role="region" aria-label="Site settings reference table" tabindex="0">
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Setting</th>
+                    <th scope="col">Description</th>
+                    <th scope="col">Example</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>WhatsApp Number</strong></td>
+                    <td>Business WhatsApp with country code, no + or spaces</td>
+                    <td><code>9779861760709</code></td>
+                </tr>
+                <tr>
+                    <td><strong>Facebook Page Username</strong></td>
+                    <td>Username from your Facebook page URL (for Messenger)</td>
+                    <td><code>metalhub.np</code></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="callout callout-warn" role="alert">
+        <svg class="callout-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <div><strong>Important:</strong> When a customer places an order, the system builds a message with all items, prices, and a delivery map link, then sends it to this WhatsApp number or Facebook page.</div>
+    </div>
+</section>
+
+<section id="translations" aria-labelledby="heading-translations">
+    <div class="section-header">
+        <div class="section-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
+        </div>
+        <h2 id="heading-translations">Managing Translations</h2>
+    </div>
+
+    <p>The site is trilingual: English (default), Nepali (<code>/ne/</code>), and Newari (<code>/newa/</code>). Most text is managed inline when editing products and categories.</p>
+
+    <p>The Translations collection holds UI strings — labels, buttons, and messages not tied to a specific product or category. You typically won't need to edit these.</p>
+</section>
+
+<section id="publishing" aria-labelledby="heading-publishing">
+    <div class="section-header">
+        <div class="section-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m8 17 4 4 4-4"/></svg>
+        </div>
+        <h2 id="heading-publishing">How Publishing Works</h2>
+    </div>
+
+    <div class="flow" role="list" aria-label="Publishing workflow">
+        <div class="flow-step" role="listitem">
+            <strong>You save</strong>
+            <small>Click Publish</small>
+        </div>
+        <div class="flow-arrow" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </div>
+        <div class="flow-step" role="listitem">
+            <strong>Site rebuilds</strong>
+            <small>~1-2 minutes</small>
+        </div>
+        <div class="flow-arrow" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </div>
+        <div class="flow-step" role="listitem">
+            <strong>Live</strong>
+            <small>Auto-deployed</small>
+        </div>
+        <div class="flow-arrow" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </div>
+        <div class="flow-step" role="listitem">
+            <strong>Undo?</strong>
+            <small>Git revert</small>
+        </div>
+    </div>
+
+    <div class="callout callout-success" role="note">
+        <svg class="callout-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <div><strong>Tip:</strong> After saving, wait 1-2 minutes and refresh your live site. Every save is a git commit — if something goes wrong, your developer can revert.</div>
+    </div>
+</section>
+
+<section id="tips" aria-labelledby="heading-tips">
+    <div class="section-header">
+        <div class="section-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v8l4 2"/><circle cx="12" cy="12" r="10"/></svg>
+        </div>
+        <h2 id="heading-tips">Tips &amp; Common Tasks</h2>
+    </div>
+
+    <div class="grid" role="list" aria-label="Common tasks">
+        <div class="card" role="listitem">
+            <div class="card-num" aria-hidden="true">1</div>
+            <h4>Add a Sale Price</h4>
+            <p>Open the product, scroll to "Product Discount", toggle "Active" on, choose percentage or flat, enter the value. The crossed-out price displays automatically.</p>
+        </div>
+        <div class="card" role="listitem">
+            <div class="card-num" aria-hidden="true">2</div>
+            <h4>Mark Out of Stock</h4>
+            <p>Toggle off "In Stock". For products with variants, you can mark individual variants as out of stock while keeping others available.</p>
+        </div>
+        <div class="card" role="listitem">
+            <div class="card-num" aria-hidden="true">3</div>
+            <h4>Feature on Homepage</h4>
+            <p>Toggle on the "Featured" switch. Featured products appear in the highlighted section on the homepage.</p>
+        </div>
+        <div class="card" role="listitem">
+            <div class="card-num" aria-hidden="true">4</div>
+            <h4>Change Images</h4>
+            <p>Open the product, remove old images, upload new ones. The first image is the main one shown in product cards.</p>
+        </div>
+        <div class="card" role="listitem">
+            <div class="card-num" aria-hidden="true">5</div>
+            <h4>Add a Language</h4>
+            <p>Ask your developer to add the new locale. Once added, you'll see a fourth language tab in all fields.</p>
+        </div>
+        <div class="card" role="listitem">
+            <div class="card-num" aria-hidden="true">6</div>
+            <h4>Embed Social Posts</h4>
+            <p>On Facebook, Instagram, or TikTok, click Share then "Embed". Copy the code and paste it into the product's Social Media Embeds section.</p>
+        </div>
+    </div>
+
+    <h3>Getting Help</h3>
+    <ul>
+        <li>Check this guide first</li>
+        <li>Ask your developer for technical issues</li>
+        <li>Every change is reversible — don't be afraid to experiment</li>
+    </ul>
+</section>
+
+</main>
+
+<footer role="contentinfo">
+    <p><span class="brand">MetalHub</span> Content Management Guide</p>
+</footer>
+
+<script>
+    (function() {
+        var sections = document.querySelectorAll('section[id]');
+        var navLinks = document.querySelectorAll('nav a');
+        var ticking = false;
+
+        function updateActiveNav() {
+            var current = '';
+            for (var i = 0; i < sections.length; i++) {
+                if (window.scrollY >= sections[i].offsetTop - 80) {
+                    current = sections[i].getAttribute('id');
+                }
+            }
+            for (var j = 0; j < navLinks.length; j++) {
+                navLinks[j].classList.remove('active');
+                if (navLinks[j].getAttribute('href') === '#' + current) {
+                    navLinks[j].classList.add('active');
+                }
+            }
+            ticking = false;
+        }
+
+        window.addEventListener('scroll', function() {
+            if (!ticking) {
+                window.requestAnimationFrame(updateActiveNav);
+                ticking = true;
+            }
+        }, { passive: true });
+
+        updateActiveNav();
+    })();
+</script>
+
+</body>
+</html>
