@@ -1,0 +1,96 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getTranslations, locales, localizedPath } from "../../lib/i18n";
+
+export function getStaticPaths() {
+    return locales.map((locale) => ({
+        params: { locale: locale === "en" ? undefined : locale },
+        props: { locale },
+    }));
+}
+
+const { locale } = Astro.props;
+const t = await getTranslations(locale);
+
+const settingsEntries = await getCollection("settings");
+const site = settingsEntries[0]?.data;
+---
+
+<BaseLayout title={t("about.title")} locale={locale}>
+  <section class="py-8 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto">
+    <h1 class="text-2xl sm:text-3xl font-extrabold mb-8">{t("about.title")}</h1>
+
+    <div class="space-y-8">
+      <div class="bg-surface-2 border border-border rounded-xl p-6">
+        <h2 class="text-lg font-bold mb-3">{site?.businessName || "Metal Hub"}</h2>
+        <p class="text-text-2">{t("about.description")}</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="bg-surface-2 border border-border rounded-xl p-6">
+          <h3 class="text-base font-bold mb-2">{t("about.workHours")}</h3>
+          <p class="text-text-2 text-sm">{site?.workHours || "9am - 8pm"}</p>
+        </div>
+        <div class="bg-surface-2 border border-border rounded-xl p-6">
+          <h3 class="text-base font-bold mb-2">{t("about.storeHours")}</h3>
+          <p class="text-text-2 text-sm">{site?.storeHours || "Sunday to Friday, all days"}</p>
+        </div>
+      </div>
+
+      <div class="bg-surface-2 border border-border rounded-xl p-6">
+        <h3 class="text-base font-bold mb-3">{t("about.location")}</h3>
+        <p class="text-text-2 text-sm mb-4">{site?.storeAddress || "Kathmandu, Nepal"}</p>
+        {site?.storeMapEmbed && (
+          <div class="rounded-lg overflow-hidden" set:html={site.storeMapEmbed} />
+        )}
+      </div>
+
+      <div class="bg-surface-2 border border-border rounded-xl p-6">
+        <h3 class="text-base font-bold mb-3">{t("about.contactUs")}</h3>
+        <div class="flex flex-wrap gap-3">
+          {site?.whatsappNumber && (
+            <a
+              href={`https://wa.me/${site.whatsappNumber}`}
+              target="_blank"
+              rel="noopener"
+              class="inline-flex items-center gap-2 px-4 py-2 bg-[#25d366] text-white rounded-lg text-sm font-medium transition-[colors,transform] hover:bg-[#1da851] hover:-translate-y-0.5 no-underline"
+            >
+              WhatsApp
+            </a>
+          )}
+          {site?.facebookUrl && (
+            <a
+              href={site.facebookUrl}
+              target="_blank"
+              rel="noopener"
+              class="inline-flex items-center gap-2 px-4 py-2 bg-[#1877f2] text-white rounded-lg text-sm font-medium transition-[colors,transform] hover:bg-[#166fe5] hover:-translate-y-0.5 no-underline"
+            >
+              Facebook
+            </a>
+          )}
+          {site?.instagramUrl && (
+            <a
+              href={site.instagramUrl}
+              target="_blank"
+              rel="noopener"
+              class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#f09433] via-[#e6683c] to-[#bc1888] text-white rounded-lg text-sm font-medium transition-[colors,transform] hover:-translate-y-0.5 no-underline"
+            >
+              Instagram
+            </a>
+          )}
+          {site?.tiktokUrl && (
+            <a
+              href={site.tiktokUrl}
+              target="_blank"
+              rel="noopener"
+              class="inline-flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg text-sm font-medium transition-[colors,transform] hover:-translate-y-0.5 no-underline"
+            >
+              TikTok
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

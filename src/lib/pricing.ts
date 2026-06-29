@@ -2,6 +2,20 @@ interface PriceDiscount {
     active: boolean;
     type: "percentage" | "flat";
     value: number;
+    saleType?: string;
+    eventName?: string;
+    startDate?: string;
+    endDate?: string;
+}
+
+export function isSaleActive(discount: PriceDiscount): boolean {
+    if (!discount.active) return false;
+    if (!discount.startDate || !discount.endDate) return discount.active;
+    const now = new Date();
+    const start = new Date(discount.startDate);
+    const end = new Date(discount.endDate);
+    end.setHours(23, 59, 59, 999);
+    return now >= start && now <= end;
 }
 
 interface PriceResult {
@@ -78,6 +92,10 @@ interface SaleItem {
     discountLabel: string;
     linkParams: string;
     stock: number;
+    saleType?: string;
+    eventName?: string;
+    startDate?: string;
+    endDate?: string;
 }
 
 function applyDiscount(price: number, discount: PriceDiscount): number {
@@ -94,7 +112,7 @@ export function formatPrice(amount: number): string {
 export function calculateVariantPrice(basePrice: number, variant: Variant): PriceResult {
     const total = basePrice + variant.priceModifier;
 
-    if (variant.discount.active) {
+    if (isSaleActive(variant.discount)) {
         const discounted = applyDiscount(total, variant.discount);
         const label =
             variant.discount.type === "percentage"
@@ -211,7 +229,7 @@ export function getSaleVariants(
         const d = product.data;
         const image = d.images[0] || "";
 
-        if (d.discount.active) {
+        if (isSaleActive(d.discount)) {
             const discounted = applyDiscount(d.basePrice, d.discount);
             const label = d.discount.type === "percentage" ? `${d.discount.value}% off` : `NPR ${d.discount.value} off`;
             results.push({
@@ -224,11 +242,15 @@ export function getSaleVariants(
                 discountLabel: label,
                 linkParams: "",
                 stock: d.stock ?? 0,
+                saleType: d.discount.saleType,
+                eventName: d.discount.eventName,
+                startDate: d.discount.startDate,
+                endDate: d.discount.endDate,
             });
         }
 
         for (const variant of d.variants) {
-            if (variant.discount.active) {
+            if (isSaleActive(variant.discount)) {
                 const totalPrice = d.basePrice + variant.priceModifier;
                 const discounted = applyDiscount(totalPrice, variant.discount);
                 const labels = d.attributeGroups
@@ -248,6 +270,10 @@ export function getSaleVariants(
                     discountLabel: label,
                     linkParams: buildVariantParams(variant.attributeValues),
                     stock: variant.stock ?? 0,
+                    saleType: variant.discount.saleType || d.discount.saleType,
+                    eventName: variant.discount.eventName || d.discount.eventName,
+                    startDate: variant.discount.startDate || d.discount.startDate,
+                    endDate: variant.discount.endDate || d.discount.endDate,
                 });
             }
         }
@@ -270,8 +296,9 @@ export function getProductPriceRange(
     productDiscount: PriceDiscount,
 ): PriceRangeResult {
     if (!variants || variants.length === 0) {
-        const discounted = productDiscount.active ? applyDiscount(basePrice, productDiscount) : basePrice;
-        const label = productDiscount.active
+        const active = isSaleActive(productDiscount);
+        const discounted = active ? applyDiscount(basePrice, productDiscount) : basePrice;
+        const label = active
             ? productDiscount.type === "percentage"
                 ? `${productDiscount.value}% off`
                 : `NPR ${productDiscount.value} off`
@@ -279,7 +306,7 @@ export function getProductPriceRange(
         return {
             price: discounted,
             originalPrice: basePrice,
-            hasDiscount: productDiscount.active,
+            hasDiscount: active,
             discountLabel: label,
             cheapestVariantParams: "",
         };
@@ -293,7 +320,7 @@ export function getProductPriceRange(
 
     for (const v of variants) {
         const total = basePrice + v.priceModifier;
-        if (v.discount?.active) {
+        if (isSaleActive(v.discount)) {
             const discounted = applyDiscount(total, v.discount);
             if (discounted < cheapestPrice) {
                 cheapestPrice = discounted;

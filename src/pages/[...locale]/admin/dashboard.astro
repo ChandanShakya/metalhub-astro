@@ -1,0 +1,319 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import { getTranslations, locales } from "../../../lib/i18n";
+
+export function getStaticPaths() {
+    return locales.map((locale) => ({
+        params: { locale: locale === "en" ? undefined : locale },
+        props: { locale },
+    }));
+}
+
+const { locale } = Astro.props;
+const t = await getTranslations(locale);
+---
+
+<BaseLayout title="Admin Dashboard" locale={locale}>
+  <div id="auth-screen" class="min-h-[60vh] flex items-center justify-center px-4">
+    <div class="w-full max-w-sm bg-surface-2 border border-border rounded-xl p-6">
+      <h1 class="text-xl font-bold mb-4 text-center">Admin Login</h1>
+      <form id="login-form">
+        <input type="password" id="password-input" placeholder="Enter password" class="w-full px-4 py-2.5 border border-border rounded-lg text-sm mb-4 focus:outline-none focus:border-accent" />
+        <button type="submit" class="w-full bg-accent text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer hover:bg-accent/90 transition-colors">Login</button>
+        <p id="login-error" class="text-sale text-sm mt-2 hidden"></p>
+      </form>
+    </div>
+  </div>
+
+  <div id="dashboard-screen" class="hidden min-h-[60vh] px-4 py-6">
+    <div class="max-w-5xl mx-auto">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold">Admin Dashboard</h1>
+        <button id="logout-btn" class="text-sm text-text-3 hover:text-sale cursor-pointer">Logout</button>
+      </div>
+
+      <div class="flex gap-2 mb-6 border-b border-border">
+        <button class="tab-btn active px-4 py-2.5 text-sm font-medium border-b-2 border-accent text-accent cursor-pointer" data-tab="products">Products</button>
+        <button class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-text-3 cursor-pointer hover:text-accent" data-tab="pages">Pages</button>
+        <button class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-text-3 cursor-pointer hover:text-accent" data-tab="business">Business</button>
+      </div>
+
+      <div id="tab-products" class="tab-content">
+        <div id="products-loading" class="text-center py-8 text-text-3">Loading products...</div>
+        <div id="products-list" class="hidden"></div>
+      </div>
+
+      <div id="tab-pages" class="tab-content hidden">
+        <div id="pages-loading" class="text-center py-8 text-text-3">Loading pages...</div>
+        <div id="pages-list" class="hidden"></div>
+      </div>
+
+      <div id="tab-business" class="tab-content hidden">
+        <div id="business-loading" class="text-center py-8 text-text-3">Loading settings...</div>
+        <div id="business-form" class="hidden"></div>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline>
+    var adminPassword = null;
+
+    document.getElementById("login-form").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      var pw = document.getElementById("password-input").value;
+      var errEl = document.getElementById("login-error");
+      errEl.classList.add("hidden");
+
+      try {
+        var res = await fetch("/api/stock/auth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: pw }),
+        });
+        var data = await res.json();
+        if (data.success) {
+          adminPassword = pw;
+          document.getElementById("auth-screen").classList.add("hidden");
+          document.getElementById("dashboard-screen").classList.remove("hidden");
+          loadProducts();
+        } else {
+          errEl.textContent = data.error || "Invalid password";
+          errEl.classList.remove("hidden");
+        }
+      } catch(err) {
+        errEl.textContent = "Connection error";
+        errEl.classList.remove("hidden");
+      }
+    });
+
+    document.getElementById("logout-btn").addEventListener("click", function() {
+      adminPassword = null;
+      document.getElementById("dashboard-screen").classList.add("hidden");
+      document.getElementById("auth-screen").classList.remove("hidden");
+      document.getElementById("password-input").value = "";
+    });
+
+    document.querySelectorAll(".tab-btn").forEach(function(btn) {
+      btn.addEventListener("click", function() {
+        document.querySelectorAll(".tab-btn").forEach(function(b) {
+          b.classList.remove("active", "border-accent", "text-accent");
+          b.classList.add("border-transparent", "text-text-3");
+        });
+        btn.classList.add("active", "border-accent", "text-accent");
+        btn.classList.remove("border-transparent", "text-text-3");
+
+        document.querySelectorAll(".tab-content").forEach(function(c) { c.classList.add("hidden"); });
+        document.getElementById("tab-" + btn.dataset.tab).classList.remove("hidden");
+
+        if (btn.dataset.tab === "products") loadProducts();
+        if (btn.dataset.tab === "pages") loadPages();
+        if (btn.dataset.tab === "business") loadBusiness();
+      });
+    });
+
+    async function loadProducts() {
+      var loading = document.getElementById("products-loading");
+      var list = document.getElementById("products-list");
+      loading.classList.remove("hidden");
+      list.classList.add("hidden");
+
+      try {
+        var res = await fetch("/api/stock/products?password=" + encodeURIComponent(adminPassword));
+        var data = await res.json();
+        if (data.products) {
+          renderProducts(data.products);
+          loading.classList.add("hidden");
+          list.classList.remove("hidden");
+        }
+      } catch(err) {
+        loading.textContent = "Failed to load products";
+      }
+    }
+
+    function renderProducts(products) {
+      var html = '<div class="space-y-4">';
+      products.forEach(function(p) {
+        html += '<div class="bg-surface-2 border border-border rounded-xl p-4">';
+        html += '<div class="flex items-center justify-between mb-2">';
+        html += '<h3 class="font-semibold">' + (p.name.en || p.name) + '</h3>';
+        html += '<span class="text-xs text-text-3">' + p.category + ' · ' + p.material + '</span>';
+        html += '</div>';
+        html += '<div class="flex items-center gap-4 text-sm">';
+        html += '<div><span class="text-text-3">Stock:</span> ';
+        html += '<input type="number" min="0" value="' + p.stock + '" data-slug="' + p.slug + '" class="stock-input w-20 px-2 py-1 border border-border rounded text-sm" />';
+        html += '<button data-slug="' + p.slug + '" class="save-stock-btn ml-2 px-3 py-1 bg-accent text-white text-xs rounded cursor-pointer hover:bg-accent/90">Save</button>';
+        html += '</div>';
+        html += '<span class="text-xs ' + (p.inStock ? 'text-success' : 'text-sale') + '">' + (p.inStock ? 'In Stock' : 'Out of Stock') + '</span>';
+        html += '</div>';
+
+        if (p.variants && p.variants.length > 0) {
+          html += '<div class="mt-3 pt-3 border-t border-border">';
+          html += '<p class="text-xs text-text-3 mb-2">Variants:</p>';
+          html += '<div class="space-y-2">';
+          p.variants.forEach(function(v) {
+            html += '<div class="flex items-center gap-3 text-sm">';
+            html += '<span class="text-text-2 w-32 truncate">' + v.key + '</span>';
+            html += '<input type="number" min="0" value="' + v.stock + '" data-slug="' + p.slug + '" data-variant="' + v.key + '" class="stock-input w-20 px-2 py-1 border border-border rounded text-sm" />';
+            html += '<button data-slug="' + p.slug + '" data-variant="' + v.key + '" class="save-stock-btn ml-2 px-3 py-1 bg-accent text-white text-xs rounded cursor-pointer hover:bg-accent/90">Save</button>';
+            html += '<span class="text-xs ' + (v.inStock ? 'text-success' : 'text-sale') + '">' + (v.inStock ? 'In Stock' : 'Out of Stock') + '</span>';
+            html += '</div>';
+          });
+          html += '</div></div>';
+        }
+        html += '</div>';
+      });
+      html += '</div>';
+
+      document.getElementById("products-list").innerHTML = html;
+
+      document.querySelectorAll(".save-stock-btn").forEach(function(btn) {
+        btn.addEventListener("click", async function() {
+          var slug = btn.dataset.slug;
+          var variant = btn.dataset.variant;
+          var input = btn.parentElement.querySelector(".stock-input");
+          var stock = parseInt(input.value) || 0;
+
+          btn.textContent = "Saving...";
+          btn.disabled = true;
+
+          try {
+            var res = await fetch("/api/stock/update", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ password: adminPassword, slug: slug, stock: stock, variantKey: variant || undefined }),
+            });
+            var data = await res.json();
+            if (data.success) {
+              btn.textContent = "Saved!";
+              setTimeout(function() { btn.textContent = "Save"; btn.disabled = false; }, 1500);
+            } else {
+              btn.textContent = "Error";
+              setTimeout(function() { btn.textContent = "Save"; btn.disabled = false; }, 1500);
+            }
+          } catch(err) {
+            btn.textContent = "Error";
+            setTimeout(function() { btn.textContent = "Save"; btn.disabled = false; }, 1500);
+          }
+        });
+      });
+    }
+
+    async function loadPages() {
+      var loading = document.getElementById("pages-loading");
+      var list = document.getElementById("pages-list");
+      loading.classList.remove("hidden");
+      list.classList.add("hidden");
+
+      try {
+        var res = await fetch("/api/stock/pages?password=" + encodeURIComponent(adminPassword));
+        var data = await res.json();
+        if (data.pages) {
+          renderPages(data.pages);
+          loading.classList.add("hidden");
+          list.classList.remove("hidden");
+        }
+      } catch(err) {
+        loading.textContent = "Failed to load pages";
+      }
+    }
+
+    function renderPages(pages) {
+      var html = '<div class="space-y-3">';
+      pages.sort(function(a, b) { return a.order - b.order; }).forEach(function(p) {
+        html += '<div class="bg-surface-2 border border-border rounded-xl p-4 flex items-center justify-between">';
+        html += '<div>';
+        html += '<h3 class="font-semibold">' + (p.title.en || p.title) + '</h3>';
+        html += '<p class="text-xs text-text-3">Slug: ' + p.slug + '</p>';
+        html += '</div>';
+        html += '<a href="/info/' + p.slug + '/" target="_blank" class="text-sm text-accent hover:underline">View ↗</a>';
+        html += '</div>';
+      });
+      html += '</div>';
+      html += '<p class="text-xs text-text-3 mt-4">Edit content by modifying the markdown files in src/content/info-pages/</p>';
+      document.getElementById("pages-list").innerHTML = html;
+    }
+
+    async function loadBusiness() {
+      var loading = document.getElementById("business-loading");
+      var form = document.getElementById("business-form");
+      loading.classList.remove("hidden");
+      form.classList.add("hidden");
+
+      try {
+        var res = await fetch("/api/stock/business?password=" + encodeURIComponent(adminPassword));
+        var data = await res.json();
+        if (data.settings) {
+          renderBusiness(data.settings);
+          loading.classList.add("hidden");
+          form.classList.remove("hidden");
+        }
+      } catch(err) {
+        loading.textContent = "Failed to load settings";
+      }
+    }
+
+    function renderBusiness(settings) {
+      var fields = [
+        { key: "businessName", label: "Business Name", type: "text" },
+        { key: "workHours", label: "Work Hours", type: "text" },
+        { key: "storeHours", label: "Store Hours", type: "text" },
+        { key: "storeAddress", label: "Store Address", type: "text" },
+        { key: "whatsappNumber", label: "WhatsApp Number", type: "text" },
+        { key: "messengerPage", label: "Messenger Page", type: "text" },
+        { key: "facebookUrl", label: "Facebook URL", type: "text" },
+        { key: "instagramUrl", label: "Instagram URL", type: "text" },
+        { key: "tiktokUrl", label: "TikTok URL", type: "text" },
+        { key: "storeMapEmbed", label: "Google Maps Embed (iframe HTML)", type: "textarea" },
+      ];
+
+      var html = '<form id="business-settings-form" class="space-y-4">';
+      fields.forEach(function(f) {
+        html += '<div>';
+        html += '<label class="block text-sm font-medium mb-1">' + f.label + '</label>';
+        if (f.type === "textarea") {
+          html += '<textarea data-key="' + f.key + '" class="business-field w-full px-3 py-2 border border-border rounded-lg text-sm" rows="4">' + (settings[f.key] || '') + '</textarea>';
+        } else {
+          html += '<input type="text" data-key="' + f.key + '" value="' + (settings[f.key] || '') + '" class="business-field w-full px-3 py-2 border border-border rounded-lg text-sm" />';
+        }
+        html += '</div>';
+      });
+      html += '<button type="submit" class="bg-accent text-white px-6 py-2.5 rounded-lg text-sm font-semibold cursor-pointer hover:bg-accent/90">Save Settings</button>';
+      html += '<p id="business-save-status" class="text-sm mt-2 hidden"></p>';
+      html += '</form>';
+
+      document.getElementById("business-form").innerHTML = html;
+
+      document.getElementById("business-settings-form").addEventListener("submit", async function(e) {
+        e.preventDefault();
+        var statusEl = document.getElementById("business-save-status");
+        statusEl.classList.add("hidden");
+
+        var data = { password: adminPassword };
+        document.querySelectorAll(".business-field").forEach(function(field) {
+          data[field.dataset.key] = field.value;
+        });
+
+        try {
+          var res = await fetch("/api/stock/business", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          });
+          var result = await res.json();
+          if (result.success) {
+            statusEl.textContent = "Settings saved successfully!";
+            statusEl.className = "text-sm mt-2 text-success";
+          } else {
+            statusEl.textContent = result.error || "Failed to save";
+            statusEl.className = "text-sm mt-2 text-sale";
+          }
+          statusEl.classList.remove("hidden");
+        } catch(err) {
+          statusEl.textContent = "Connection error";
+          statusEl.className = "text-sm mt-2 text-sale";
+          statusEl.classList.remove("hidden");
+        }
+      });
+    }
+  </script>
+</BaseLayout>

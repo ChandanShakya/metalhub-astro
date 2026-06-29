@@ -56,6 +56,7 @@ variants:
       active: true
       type: percentage
       value: 20
+      saleType: "Monsoon Offer"
     stock: 20
     inStock: true
     specifications:
@@ -83,6 +84,7 @@ variants:
       active: true
       type: percentage
       value: 12
+      saleType: "Monsoon Offer"
     stock: 15
     inStock: true
     specifications:
@@ -110,6 +112,7 @@ variants:
       active: true
       type: flat
       value: 150
+      saleType: "Monsoon Offer"
     stock: 15
     inStock: true
     specifications:

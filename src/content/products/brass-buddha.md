@@ -70,6 +70,7 @@ variants:
       active: true
       type: percentage
       value: 15
+      saleType: "Festival Sale"
     stock: 5
     inStock: true
     specifications:
@@ -98,6 +99,7 @@ variants:
       active: true
       type: percentage
       value: 15
+      saleType: "Festival Sale"
     stock: 5
     inStock: true
     specifications:
@@ -126,6 +128,7 @@ variants:
       active: true
       type: percentage
       value: 10
+      saleType: "Festival Sale"
     stock: 5
     inStock: true
     specifications:
@@ -154,6 +157,7 @@ variants:
       active: true
       type: percentage
       value: 10
+      saleType: "Festival Sale"
     stock: 5
     inStock: true
     specifications:
@@ -182,6 +186,7 @@ variants:
       active: true
       type: flat
       value: 200
+      saleType: "Festival Sale"
     stock: 5
     inStock: true
     specifications:
@@ -210,6 +215,7 @@ variants:
       active: true
       type: flat
       value: 200
+      saleType: "Festival Sale"
     stock: 5
     inStock: true
     specifications:

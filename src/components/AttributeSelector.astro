@@ -18,6 +18,10 @@ interface VariantDiscount {
     active: boolean;
     type: "percentage" | "flat";
     value: number;
+    saleType?: string;
+    eventName?: string;
+    startDate?: string;
+    endDate?: string;
 }
 interface VariantAttrValue {
     group: string;
@@ -86,6 +90,7 @@ for (const loc of ["en", "ne", "newa"] as const) {
 
 <div id="variant-unavailable" class="hidden text-sale text-sm font-medium my-2">Combination not available</div>
 <div id="price-display" class="text-2xl font-extrabold my-4 text-text-1"></div>
+<div id="sale-event-display" class="mb-2"></div>
 
 <div class="flex items-center gap-3 mb-2">
   <label for="qty-input" class="text-sm font-medium text-text-2">{t("products.qty")}</label>
@@ -249,10 +254,25 @@ for (const loc of ["en", "ne", "newa"] as const) {
     try { return JSON.parse(raw); } catch { return {}; }
   }
 
+  function isSaleActive(discount) {
+    if (!discount || !discount.active) return false;
+    if (!discount.startDate || !discount.endDate) return discount.active;
+    var now = new Date();
+    var start = new Date(discount.startDate);
+    var end = new Date(discount.endDate);
+    end.setHours(23, 59, 59, 999);
+    return now >= start && now <= end;
+  }
+
   function calculateVariantPrice(variant) {
     var base = getBasePrice();
     var total = base + (variant.priceModifier || 0);
-    if (variant.discount && variant.discount.active) {
+    var productData = {};
+    try {
+      productData = JSON.parse(document.getElementById("product-data")?.getAttribute("data-product") || "{}");
+    } catch(e) {}
+
+    if (variant.discount && isSaleActive(variant.discount)) {
       var disc = variant.discount;
       var discounted;
       if (disc.type === "percentage") {
@@ -263,9 +283,26 @@ for (const loc of ["en", "ne", "newa"] as const) {
       var label = disc.type === "percentage"
         ? uiText.percentOff.replace("{v}", disc.value)
         : uiText.amountOff.replace("{v}", disc.value);
-      return { price: discounted, original: total, hasDiscount: true, label: label };
+      var saleType = disc.saleType || (productData.discount && productData.discount.saleType) || "";
+      var eventName = disc.eventName || (productData.discount && productData.discount.eventName) || "";
+      return { price: discounted, original: total, hasDiscount: true, label: label, saleType: saleType, eventName: eventName };
     }
-    return { price: total, original: total, hasDiscount: false, label: "" };
+
+    if (productData.discount && isSaleActive(productData.discount)) {
+      var pdisc = productData.discount;
+      var pDiscounted;
+      if (pdisc.type === "percentage") {
+        pDiscounted = Math.round(total * (1 - pdisc.value / 100));
+      } else {
+        pDiscounted = Math.max(0, total - pdisc.value);
+      }
+      var pLabel = pdisc.type === "percentage"
+        ? uiText.percentOff.replace("{v}", pdisc.value)
+        : uiText.amountOff.replace("{v}", pdisc.value);
+      return { price: pDiscounted, original: total, hasDiscount: true, label: pLabel, saleType: pdisc.saleType || "", eventName: pdisc.eventName || "" };
+    }
+
+    return { price: total, original: total, hasDiscount: false, label: "", saleType: "", eventName: "" };
   }
 
   function renderStock() {
@@ -329,14 +366,17 @@ for (const loc of ["en", "ne", "newa"] as const) {
 
   function renderPrice() {
     var display = document.getElementById("price-display");
+    var eventDisplay = document.getElementById("sale-event-display");
     var matched = findMatchingVariant();
     if (!matched) {
       var selected = getSelectedOptions();
       var keys = Object.keys(selected);
       if (keys.length > 0) {
         display.innerHTML = '<span class="text-text-3 text-base font-normal">Combination not available</span>';
+        if (eventDisplay) eventDisplay.innerHTML = "";
       } else {
         display.innerHTML = "NPR " + getBasePrice().toLocaleString();
+        if (eventDisplay) eventDisplay.innerHTML = "";
       }
       return;
     }
@@ -347,6 +387,14 @@ for (const loc of ["en", "ne", "newa"] as const) {
       html += ' <span class="inline-flex items-center bg-sale text-white text-[0.62rem] font-bold px-1.5 py-0.5 rounded uppercase ml-1">' + result.label + "</span>";
     }
     display.innerHTML = html;
+    if (eventDisplay) {
+      if (result.hasDiscount && (result.saleType || result.eventName)) {
+        var displayText = result.saleType || result.eventName;
+        eventDisplay.innerHTML = '<span class="inline-flex items-center bg-sale/10 text-sale text-xs font-semibold px-2 py-1 rounded-lg">🔥 ' + displayText + '</span>';
+      } else {
+        eventDisplay.innerHTML = "";
+      }
+    }
   }
 
   function updateURLParams() {

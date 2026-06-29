@@ -20,6 +20,8 @@ interface Props {
     locale: Locale;
     variantParams?: string;
     attributeLabels?: Record<string, string>;
+    saleType?: string;
+    eventName?: string;
 }
 
 const {
@@ -39,6 +41,8 @@ const {
     locale,
     variantParams,
     attributeLabels,
+    saleType,
+    eventName,
 } = Astro.props;
 const t = await getTranslations(locale);
 const catLabel = categoryName || category;
@@ -50,7 +54,7 @@ const productHref = localizedPath(variantParams ? `/products/${slug}/?${variantP
   <div class="p-4">
     <h2 class="text-base font-semibold mb-1 flex items-center flex-wrap gap-1.5">
       {name}
-      {hasDiscount && <span class="inline-flex items-center bg-sale text-white text-[0.62rem] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">{t("products.sale")}</span>}
+      {hasDiscount && <span class="inline-flex items-center bg-sale text-white text-[0.62rem] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">{saleType || t("products.sale")}</span>}
       {!inStock && <span class="inline-flex items-center bg-text-3 text-white text-[0.62rem] font-bold px-1.5 py-0.5 rounded uppercase">{t("products.outOfStock")}</span>}
     </h2>
     {attributeLabels && Object.keys(attributeLabels).length > 0 && (

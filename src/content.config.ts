@@ -12,6 +12,10 @@ const discountSchema = z.object({
     active: z.boolean().default(false),
     type: z.enum(["percentage", "flat"]).default("percentage"),
     value: z.number().default(0),
+    saleType: z.string().optional(),
+    eventName: z.string().optional(),
+    startDate: z.string().optional(),
+    endDate: z.string().optional(),
 });
 
 const materials = defineCollection({
@@ -113,6 +117,23 @@ const settings = defineCollection({
     schema: z.object({
         whatsappNumber: z.string().default("9779861760709"),
         messengerPage: z.string().default("metalhub.np"),
+        businessName: z.string().default("Metal Hub"),
+        workHours: z.string().default("9am - 8pm"),
+        storeHours: z.string().default("Sunday to Friday, all days"),
+        storeAddress: z.string().default("Kathmandu, Nepal"),
+        storeMapEmbed: z.string().default(""),
+        facebookUrl: z.string().default(""),
+        instagramUrl: z.string().default(""),
+        tiktokUrl: z.string().default(""),
+    }),
+});
+
+const infoPages = defineCollection({
+    loader: glob({ pattern: "**/*.md", base: "./src/content/info-pages" }),
+    schema: z.object({
+        title: localizedString,
+        slug: z.string(),
+        order: z.number().default(0),
     }),
 });
 
@@ -126,4 +147,4 @@ const i18nCollection = defineCollection({
     }),
 });
 
-export const collections = { materials, categories, products, settings, i18n: i18nCollection };
+export const collections = { materials, categories, products, settings, i18n: i18nCollection, infoPages };

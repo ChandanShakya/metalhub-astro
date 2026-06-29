@@ -3,7 +3,7 @@ import { getCollection } from "astro:content";
 import ProductCard from "../../../components/ProductCard.astro";
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { getTranslations, locales } from "../../../lib/i18n";
-import { calculateVariantPrice, getItemStock, resolveAttributeLabels } from "../../../lib/pricing";
+import { calculateVariantPrice, getItemStock, isSaleActive, resolveAttributeLabels } from "../../../lib/pricing";
 
 export function getStaticPaths() {
     return locales.map((locale) => ({
@@ -50,6 +50,27 @@ for (const p of productStatsData) {
     materialStockCounts.set(p.material, exm + p.stock);
 }
 const totalStock = productStatsData.reduce((s, p) => s + p.stock, 0);
+
+const saleTypes = new Set<string>();
+let hasAnyActiveSale = false;
+for (const product of products) {
+    if (isSaleActive(product.data.discount)) {
+        hasAnyActiveSale = true;
+        if (product.data.discount.saleType) {
+            saleTypes.add(product.data.discount.saleType);
+        }
+    }
+    for (const variant of product.data.variants) {
+        if (isSaleActive(variant.discount)) {
+            hasAnyActiveSale = true;
+            if (variant.discount.saleType) {
+                saleTypes.add(variant.discount.saleType);
+            }
+        }
+    }
+}
+const sortedSaleTypes = Array.from(saleTypes).sort();
+
 const productStatsJSON = JSON.stringify(productStatsData);
 
 interface ProductItem {
@@ -62,6 +83,8 @@ interface ProductItem {
     variantParams: string;
     attributeLabels: Record<string, string> | null;
     stock: number;
+    saleType?: string;
+    eventName?: string;
 }
 
 const productItems: ProductItem[] = products.flatMap((product) => {
@@ -70,12 +93,13 @@ const productItems: ProductItem[] = products.flatMap((product) => {
     const images = product.data.images;
 
     if (!variants || variants.length === 0) {
-        const discounted = product.data.discount.active
+        const active = isSaleActive(product.data.discount);
+        const discounted = active
             ? product.data.discount.type === "percentage"
                 ? Math.round(base * (1 - product.data.discount.value / 100))
                 : Math.max(0, base - product.data.discount.value)
             : base;
-        const label = product.data.discount.active
+        const label = active
             ? product.data.discount.type === "percentage"
                 ? `${product.data.discount.value}% off`
                 : `NPR ${product.data.discount.value} off`
@@ -86,11 +110,13 @@ const productItems: ProductItem[] = products.flatMap((product) => {
                 variant: null,
                 price: discounted,
                 originalPrice: base,
-                hasDiscount: product.data.discount.active,
+                hasDiscount: active,
                 discountLabel: label,
                 variantParams: "",
                 attributeLabels: null,
                 stock: product.data.stock ?? 0,
+                saleType: active ? product.data.discount.saleType : undefined,
+                eventName: active ? product.data.discount.eventName : undefined,
             },
         ];
     }
@@ -115,6 +141,8 @@ const productItems: ProductItem[] = products.flatMap((product) => {
             variantParams: params.toString(),
             attributeLabels: labels,
             stock: variant.stock ?? 0,
+            saleType: result.hasDiscount ? variant.discount.saleType || product.data.discount.saleType : undefined,
+            eventName: result.hasDiscount ? variant.discount.eventName || product.data.discount.eventName : undefined,
         };
     });
 });
@@ -123,7 +151,6 @@ const totalItemPages = Math.ceil(productItems.length / PER_PAGE);
 ---
 <BaseLayout title={t("products.title")} locale={locale}>
   <section class="py-8 container mx-auto px-4">
-    <h1 class="text-2xl font-bold mb-5">{t("products.title")}</h1>
 
     {productItems.length === 0 ? (
       <p class="text-center py-12 text-text-3">{t("products.noProducts")}</p>
@@ -149,6 +176,37 @@ const totalItemPages = Math.ceil(productItems.length / PER_PAGE);
             ))}
           </div>
         )}
+        {hasAnyActiveSale && (() => {
+            const onSaleStock = productItems.filter(item => item.hasDiscount).reduce((sum, item) => sum + item.stock, 0);
+            const saleTypeStock = new Map<string, number>();
+            for (const item of productItems) {
+                if (item.hasDiscount && item.saleType) {
+                    saleTypeStock.set(item.saleType, (saleTypeStock.get(item.saleType) || 0) + item.stock);
+                }
+            }
+            return (
+                <div class="mb-3">
+                    <div class="flex gap-2 flex-wrap mb-2">
+                        <button class="filter-btn group active bg-surface-2 border border-border rounded-full px-3.5 py-1.5 cursor-pointer text-sm font-medium transition-[colors,transform] text-text-2 hover:border-accent hover:text-accent" data-filter-type="sale-event" data-sale-event="all" aria-pressed="true">
+                            {t("products.all")} <span class="count-badge text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full bg-surface-3 text-text-2 leading-none ml-1">{totalStock}</span>
+                        </button>
+                        <button class="filter-btn group bg-surface-2 border border-border rounded-full px-3.5 py-1.5 cursor-pointer text-sm font-medium transition-[colors,transform] text-text-2 hover:border-accent hover:text-accent" data-filter-type="sale-event" data-sale-event="on-sale" aria-pressed="false">
+                            🔥 {t("products.onSale")} <span class="count-badge text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full bg-surface-3 text-text-2 leading-none ml-1">{onSaleStock}</span>
+                        </button>
+                    </div>
+                    <div id="sale-type-filters" class="hidden flex gap-2 flex-wrap">
+                        <button class="sale-type-btn filter-btn group active bg-surface-2 border border-border rounded-full px-3.5 py-1.5 cursor-pointer text-sm font-medium transition-[colors,transform] text-text-2 hover:border-accent hover:text-accent" data-filter-type="sale-type" data-sale-type="" aria-pressed="true">
+                            {t("products.all")} <span class="count-badge text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full bg-surface-3 text-text-2 leading-none ml-1">{onSaleStock}</span>
+                        </button>
+                        {sortedSaleTypes.map((saleType) => (
+                            <button class="sale-type-btn filter-btn group bg-surface-2 border border-border rounded-full px-3.5 py-1.5 cursor-pointer text-sm font-medium transition-[colors,transform] text-text-2 hover:border-accent hover:text-accent" data-filter-type="sale-type" data-sale-type={saleType} aria-pressed="false">
+                                🏷️ {saleType} <span class="count-badge text-[0.6rem] font-bold px-1.5 py-0.5 rounded-full bg-surface-3 text-text-2 leading-none ml-1">{saleTypeStock.get(saleType) || 0}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            );
+        })()}
 
         <div id="category-stats" class="text-xs text-text-3 mb-4 px-1 leading-relaxed" data-ui-text={JSON.stringify({ stats: t("products.stats") })}></div>
 
@@ -158,7 +216,7 @@ const totalItemPages = Math.ceil(productItems.length / PER_PAGE);
             const catName = categoryMap.get(item.product.data.category);
             const matName = materialMap.get(item.product.data.material);
             return (
-              <div class:list={["product-item", { "hidden": pageNum > 1 }]} data-category={item.product.data.category} data-material={item.product.data.material} data-page={String(pageNum)}>
+              <div class:list={["product-item", { "hidden": pageNum > 1 }]} data-category={item.product.data.category} data-material={item.product.data.material} data-sale-event={item.saleType || (item.hasDiscount ? "on-sale" : "")} data-page={String(pageNum)}>
                 <ProductCard
                   slug={item.product.data.slug}
                   name={item.product.data.name[locale as keyof typeof item.product.data.name] || item.product.data.name.en}
@@ -176,6 +234,8 @@ const totalItemPages = Math.ceil(productItems.length / PER_PAGE);
                   locale={locale}
                   variantParams={item.variantParams || undefined}
                   attributeLabels={item.attributeLabels || undefined}
+                  saleType={item.saleType}
+                  eventName={item.eventName}
                 />
               </div>
             );
@@ -217,34 +277,51 @@ const totalItemPages = Math.ceil(productItems.length / PER_PAGE);
       var dataEl = document.getElementById("category-stats-data");
       if (!dataEl) return;
       var allStats = JSON.parse(dataEl.getAttribute("data-stats") || "[]");
+      var productItems = document.querySelectorAll(".product-item");
       var activeCat = document.querySelector('.filter-btn.active[data-filter-type="category"]') as HTMLButtonElement | null;
       var activeMat = document.querySelector('.filter-btn.active[data-filter-type="material"]') as HTMLButtonElement | null;
+      var activeEvent = document.querySelector('.filter-btn.active[data-filter-type="sale-event"]') as HTMLButtonElement | null;
+      var activeSaleType = document.querySelector('.sale-type-btn.active') as HTMLButtonElement | null;
       var cat = activeCat?.dataset.category || "all";
       var mat = activeMat?.dataset.material || "all";
+      var saleEvent = activeEvent?.dataset.saleEvent || "all";
+      var saleType = activeSaleType?.dataset.saleType || "";
 
-      var filtered = [];
-      for (var i = 0; i < allStats.length; i++) {
-        var p = allStats[i];
-        if ((cat === "all" || p.category === cat) && (mat === "all" || p.material === mat)) {
-          filtered.push(p);
-        }
-      }
-
-      var productCount = filtered.length;
+      var slugs = new Set<string>();
       var materials = new Set<string>();
       var variantCount = 0;
       var totalStock = 0;
-      for (var i = 0; i < filtered.length; i++) {
-        materials.add(filtered[i].material);
-        variantCount += filtered[i].v;
-        totalStock += filtered[i].stock;
+      var catMatStock: Record<string, number> = {};
+
+      for (var i = 0; i < allStats.length; i++) {
+        var key = allStats[i].category + "|" + allStats[i].material;
+        catMatStock[key] = (catMatStock[key] || 0) + allStats[i].stock;
       }
-      var materialCount = materials.size;
+
+      productItems.forEach(function(item) {
+        var el = item as HTMLElement;
+        if (el.classList.contains("hidden")) return;
+        var matchCat = cat === "all" || el.dataset.category === cat;
+        var matchMat = mat === "all" || el.dataset.material === mat;
+        var matchSale = saleEvent === "all" || el.dataset.saleEvent !== "";
+        if (saleEvent === "on-sale" && saleType) {
+          matchSale = el.dataset.saleEvent === saleType;
+        }
+        if (matchCat && matchMat && matchSale) {
+          slugs.add(el.dataset.category + "|" + el.dataset.material);
+          materials.add(el.dataset.material || "");
+          variantCount++;
+        }
+      });
+
+      slugs.forEach(function(key) {
+        totalStock += catMatStock[key] || 0;
+      });
 
       var statsText = JSON.parse(statsEl.getAttribute("data-ui-text") || "{}");
       statsEl.textContent = (statsText.stats || "{0} products · {1} materials · {2} variants · {3} in stock")
-        .replace("{0}", productCount)
-        .replace("{1}", materialCount)
+        .replace("{0}", slugs.size)
+        .replace("{1}", materials.size)
         .replace("{2}", variantCount)
         .replace("{3}", totalStock);
     }
@@ -255,17 +332,52 @@ const totalItemPages = Math.ceil(productItems.length / PER_PAGE);
       var allStats = JSON.parse(dataEl.getAttribute("data-stats") || "[]");
       var activeCat = document.querySelector('.filter-btn.active[data-filter-type="category"]') as HTMLButtonElement | null;
       var activeMat = document.querySelector('.filter-btn.active[data-filter-type="material"]') as HTMLButtonElement | null;
+      var activeEvent = document.querySelector('.filter-btn.active[data-filter-type="sale-event"]') as HTMLButtonElement | null;
+      var activeSaleType = document.querySelector('.sale-type-btn.active') as HTMLButtonElement | null;
       var cat = activeCat?.dataset.category || "all";
       var mat = activeMat?.dataset.material || "all";
+      var saleEvent = activeEvent?.dataset.saleEvent || "all";
+      var saleType = activeSaleType?.dataset.saleType || "";
+
+      var statsMap: Record<string, number> = {};
+      for (var i = 0; i < allStats.length; i++) {
+        var p = allStats[i];
+        var key = p.category + "|" + p.material;
+        statsMap[key] = (statsMap[key] || 0) + p.stock;
+      }
+
+      var productItems = document.querySelectorAll(".product-item");
+      var saleCatStock: Record<string, number> = {};
+      var saleMatStock: Record<string, number> = {};
+
+      productItems.forEach(function(item) {
+        var el = item as HTMLElement;
+        var pCat = el.dataset.category || "";
+        var pMat = el.dataset.material || "";
+        var pSale = el.dataset.saleEvent || "";
+        var key = pCat + "|" + pMat;
+        var stock = statsMap[key] || 0;
+
+        var matchSale = saleEvent === "all" || pSale !== "";
+        if (saleEvent === "on-sale" && saleType) {
+          matchSale = pSale === saleType;
+        }
+
+        if (matchSale) {
+          saleCatStock[pCat] = (saleCatStock[pCat] || 0) + stock;
+          saleMatStock[pMat] = (saleMatStock[pMat] || 0) + stock;
+        }
+      });
 
       document.querySelectorAll('.filter-btn[data-filter-type="material"]').forEach(function(btn) {
         var btnMat = btn.dataset.material;
         var stock = 0;
-        for (var i = 0; i < allStats.length; i++) {
-          var p = allStats[i];
-          if ((btnMat === "all" || p.material === btnMat) && (cat === "all" || p.category === cat)) {
-            stock += p.stock;
+        if (btnMat === "all") {
+          for (var k in saleMatStock) {
+            if (mat === "all" || k === mat) stock += saleMatStock[k];
           }
+        } else {
+          stock = saleMatStock[btnMat] || 0;
         }
         var badge = btn.querySelector(".count-badge");
         if (badge) badge.textContent = stock;
@@ -274,11 +386,12 @@ const totalItemPages = Math.ceil(productItems.length / PER_PAGE);
       document.querySelectorAll('.filter-btn[data-filter-type="category"]').forEach(function(btn) {
         var btnCat = btn.dataset.category;
         var stock = 0;
-        for (var i = 0; i < allStats.length; i++) {
-          var p = allStats[i];
-          if ((btnCat === "all" || p.category === btnCat) && (mat === "all" || p.material === mat)) {
-            stock += p.stock;
+        if (btnCat === "all") {
+          for (var k in saleCatStock) {
+            if (cat === "all" || k === cat) stock += saleCatStock[k];
           }
+        } else {
+          stock = saleCatStock[btnCat] || 0;
         }
         var badge = btn.querySelector(".count-badge");
         if (badge) badge.textContent = stock;
@@ -292,8 +405,12 @@ const totalItemPages = Math.ceil(productItems.length / PER_PAGE);
 
       var activeCat = document.querySelector('.filter-btn.active[data-filter-type="category"]') as HTMLButtonElement | null;
       var activeMat = document.querySelector('.filter-btn.active[data-filter-type="material"]') as HTMLButtonElement | null;
+      var activeEvent = document.querySelector('.filter-btn.active[data-filter-type="sale-event"]') as HTMLButtonElement | null;
+      var activeSaleType = document.querySelector('.sale-type-btn.active') as HTMLButtonElement | null;
       var cat = activeCat?.dataset.category || "all";
       var mat = activeMat?.dataset.material || "all";
+      var saleEvent = activeEvent?.dataset.saleEvent || "all";
+      var saleType = activeSaleType?.dataset.saleType || "";
 
       var visibleCount = 0;
       var totalMatch = 0;
@@ -301,7 +418,15 @@ const totalItemPages = Math.ceil(productItems.length / PER_PAGE);
         var el = item as HTMLElement;
         var matchCat = cat === "all" || el.dataset.category === cat;
         var matchMat = mat === "all" || el.dataset.material === mat;
-        var match = matchCat && matchMat;
+        var matchEvent = saleEvent === "all" || el.dataset.saleEvent !== "";
+        if (saleEvent === "on-sale") {
+          if (saleType) {
+            matchEvent = el.dataset.saleEvent === saleType;
+          } else {
+            matchEvent = el.dataset.saleEvent !== "";
+          }
+        }
+        var match = matchCat && matchMat && matchEvent;
         if (match) totalMatch++;
         if (match) {
           visibleCount++;
@@ -318,6 +443,7 @@ const totalItemPages = Math.ceil(productItems.length / PER_PAGE);
       var params = new URLSearchParams(window.location.search);
       if (cat === "all") params.delete("category"); else params.set("category", cat);
       if (mat === "all") params.delete("material"); else params.set("material", mat);
+      if (saleEvent === "all") params.delete("sale"); else params.set("sale", saleEvent);
       var newUrl = window.location.pathname + (params.toString() ? "?" + params.toString() : "");
       history.replaceState(null, "", newUrl);
 
@@ -346,7 +472,7 @@ const totalItemPages = Math.ceil(productItems.length / PER_PAGE);
       var currentPage = 1;
       if (grid) grid.setAttribute("data-page", "1");
 
-      var filterGroups = ["category", "material"];
+      var filterGroups = ["category", "material", "sale-event"];
 
       filterGroups.forEach(function(type) {
         document.querySelectorAll('.filter-btn[data-filter-type="' + type + '"]').forEach(function(btn) {
@@ -370,11 +496,52 @@ const totalItemPages = Math.ceil(productItems.length / PER_PAGE);
               thisBadge.classList.add("bg-white/20", "text-white");
             }
 
+            if (type === "sale-event") {
+              var saleTypeFilters = document.getElementById("sale-type-filters");
+              if (saleTypeFilters) {
+                if (this.dataset.saleEvent === "on-sale") {
+                  saleTypeFilters.classList.remove("hidden");
+                  saleTypeFilters.classList.add("flex");
+                  document.querySelectorAll('.sale-type-btn').forEach(function(b) {
+                    b.classList.remove("active", "bg-accent", "text-white", "border-accent");
+                    b.classList.add("bg-surface-2", "text-text-2", "border-border");
+                    b.setAttribute("aria-pressed", "false");
+                  });
+                  var allSaleTypeBtn = saleTypeFilters.querySelector('[data-sale-type=""]') as HTMLButtonElement | null;
+                  if (allSaleTypeBtn) {
+                    allSaleTypeBtn.classList.add("active", "bg-accent", "text-white", "border-accent");
+                    allSaleTypeBtn.classList.remove("bg-surface-2", "text-text-2", "border-border");
+                    allSaleTypeBtn.setAttribute("aria-pressed", "true");
+                  }
+                } else {
+                  saleTypeFilters.classList.add("hidden");
+                  saleTypeFilters.classList.remove("flex");
+                }
+              }
+            }
+
             currentPage = 1;
             grid?.setAttribute("data-page", "1");
             applyFilters();
           }, { signal });
         });
+      });
+
+      document.querySelectorAll('.sale-type-btn').forEach(function(btn) {
+        btn.addEventListener("click", function(this: HTMLButtonElement) {
+          document.querySelectorAll('.sale-type-btn').forEach(function(b) {
+            b.classList.remove("active", "bg-accent", "text-white", "border-accent");
+            b.classList.add("bg-surface-2", "text-text-2", "border-border");
+            b.setAttribute("aria-pressed", "false");
+          });
+          this.classList.add("active", "bg-accent", "text-white", "border-accent");
+          this.classList.remove("bg-surface-2", "text-text-2", "border-border");
+          this.setAttribute("aria-pressed", "true");
+
+          currentPage = 1;
+          grid?.setAttribute("data-page", "1");
+          applyFilters();
+        }, { signal });
       });
 
       var loadMoreBtn = document.getElementById("load-more-btn");
@@ -385,15 +552,27 @@ const totalItemPages = Math.ceil(productItems.length / PER_PAGE);
 
           var activeCat = document.querySelector('.filter-btn.active[data-filter-type="category"]') as HTMLButtonElement | null;
           var activeMat = document.querySelector('.filter-btn.active[data-filter-type="material"]') as HTMLButtonElement | null;
+          var activeEvent = document.querySelector('.filter-btn.active[data-filter-type="sale-event"]') as HTMLButtonElement | null;
+          var activeSaleType = document.querySelector('.sale-type-btn.active') as HTMLButtonElement | null;
           var cat = activeCat?.dataset.category || "all";
           var mat = activeMat?.dataset.material || "all";
+          var saleEvent = activeEvent?.dataset.saleEvent || "all";
+          var saleType = activeSaleType?.dataset.saleType || "";
 
           var visibleCount = 0;
           document.querySelectorAll(".product-item").forEach(function(item) {
             var el = item as HTMLElement;
             var matchCat = cat === "all" || el.dataset.category === cat;
             var matchMat = mat === "all" || el.dataset.material === mat;
-            if (matchCat && matchMat) {
+            var matchEvent = saleEvent === "all" || el.dataset.saleEvent !== "";
+            if (saleEvent === "on-sale") {
+              if (saleType) {
+                matchEvent = el.dataset.saleEvent === saleType;
+              } else {
+                matchEvent = el.dataset.saleEvent !== "";
+              }
+            }
+            if (matchCat && matchMat && matchEvent) {
               visibleCount++;
               if (visibleCount <= perPage * currentPage) {
                 el.classList.remove("hidden");
@@ -418,10 +597,13 @@ const totalItemPages = Math.ceil(productItems.length / PER_PAGE);
       var urlParams = new URLSearchParams(window.location.search);
       var initialCat = urlParams.get("category") || "all";
       var initialMat = urlParams.get("material") || "all";
+      var initialEvent = urlParams.get("sale") || "all";
       var catBtn = document.querySelector('.filter-btn[data-category="' + initialCat + '"]') as HTMLButtonElement | null;
       if (catBtn) catBtn.click();
       var matBtn = document.querySelector('.filter-btn[data-material="' + initialMat + '"]') as HTMLButtonElement | null;
       if (matBtn) matBtn.click();
+      var eventBtn = document.querySelector('.filter-btn[data-sale-event="' + initialEvent + '"]') as HTMLButtonElement | null;
+      if (eventBtn) eventBtn.click();
     }
 
     document.addEventListener("astro:page-load", function() {

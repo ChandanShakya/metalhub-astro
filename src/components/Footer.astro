@@ -1,5 +1,6 @@
 ---
-import { getTranslations, type Locale } from "../lib/i18n";
+import { getCollection } from "astro:content";
+import { getTranslations, type Locale, localizedPath } from "../lib/i18n";
 import PaymentBadges from "./PaymentBadges.astro";
 
 interface Props {
@@ -8,12 +9,25 @@ interface Props {
 
 const { locale } = Astro.props;
 const t = await getTranslations(locale);
+
+const infoPages = await getCollection("infoPages");
+const sortedPages = infoPages.sort((a, b) => a.data.order - b.data.order);
 ---
 
 <footer class="bg-text-1 text-white/70 text-center py-8 px-4">
   <div class="mx-auto max-w-site">
     <PaymentBadges t={t} />
-    <p class="my-0.5 text-sm mt-4">{t("site.name")} &copy; {new Date().getFullYear()} &mdash; {t("footer.madeIn")}</p>
+    <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-4 mb-3">
+      {sortedPages.map((page) => (
+        <a
+          href={localizedPath(`/info/${page.data.slug}/`, locale)}
+          class="text-sm text-white/60 hover:text-white transition-colors no-underline"
+        >
+          {page.data.title[locale as keyof typeof page.data.title] || page.data.title.en}
+        </a>
+      ))}
+    </div>
+    <p class="my-0.5 text-sm">{t("site.name")} &copy; {new Date().getFullYear()} &mdash; {t("footer.madeIn")}</p>
     <p class="my-0.5 text-sm">{t("footer.rights")}</p>
   </div>
 </footer>

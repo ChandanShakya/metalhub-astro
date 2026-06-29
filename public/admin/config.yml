@@ -96,6 +96,7 @@ collections:
           field: { name: image, widget: image },
         }
       - { label: Base Price (NPR), name: basePrice, widget: number }
+      - { label: Stock, name: stock, widget: number, min: 0, default: 0 }
       - { label: In Stock, name: inStock, widget: boolean, default: true }
       - { label: Featured, name: featured, widget: boolean, default: false }
       - label: Product Discount (fallback)
@@ -111,6 +112,10 @@ collections:
               default: percentage,
             }
           - { label: Value, name: value, widget: number, default: 0 }
+          - { label: Sale Type, name: saleType, widget: string, required: false, hint: "e.g. Festival Sale, Clearance, Flash Sale" }
+          - { label: Event Name, name: eventName, widget: string, required: false, hint: "e.g. Dashain Sale, Tihar Offer" }
+          - { label: Start Date, name: startDate, widget: datetime, required: false }
+          - { label: End Date, name: endDate, widget: datetime, required: false }
       - label: Specifications
         name: specifications
         widget: list
@@ -174,6 +179,11 @@ collections:
               - { label: Active, name: active, widget: boolean, default: false }
               - { label: Type, name: type, widget: select, options: [percentage, flat] }
               - { label: Value, name: value, widget: number, default: 0 }
+              - { label: Sale Type, name: saleType, widget: string, required: false, hint: "e.g. Festival Sale, Clearance, Flash Sale" }
+              - { label: Event Name, name: eventName, widget: string, required: false, hint: "e.g. Dashain Sale, Tihar Offer" }
+              - { label: Start Date, name: startDate, widget: datetime, required: false }
+              - { label: End Date, name: endDate, widget: datetime, required: false }
+          - { label: Stock, name: stock, widget: number, min: 0, default: 0 }
           - { label: In Stock, name: inStock, widget: boolean, default: true }
           - label: Images (override product images for this variant)
             name: images
@@ -233,3 +243,11 @@ collections:
           widget: string,
           hint: "The username from your Facebook page URL, e.g. metalhub.np",
         }
+      - { label: Business Name, name: businessName, widget: string, default: "Metal Hub" }
+      - { label: Work Hours, name: workHours, widget: string, default: "9am - 8pm" }
+      - { label: Store Hours, name: storeHours, widget: string, default: "Sunday to Friday, all days" }
+      - { label: Store Address, name: storeAddress, widget: string, default: "Kathmandu, Nepal" }
+      - { label: Google Maps Embed (iframe HTML), name: storeMapEmbed, widget: text, required: false }
+      - { label: Facebook URL, name: facebookUrl, widget: string, required: false }
+      - { label: Instagram URL, name: instagramUrl, widget: string, required: false }
+      - { label: TikTok URL, name: tiktokUrl, widget: string, required: false }

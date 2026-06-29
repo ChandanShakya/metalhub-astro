@@ -1,0 +1,152 @@
+---
+import { getCollection, render } from "astro:content";
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import { getTranslations, locales, localizedPath } from "../../../lib/i18n";
+
+const pageIcons: Record<string, string> = {
+    "return-policy": `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"/></svg>`,
+    delivery: `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/></svg>`,
+    refund: `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/></svg>`,
+    workdays: `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+    "store-hours": `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.75c0 .415.336.75.75.75z"/></svg>`,
+    maintenance: `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17l-5.657-5.657a8.023 8.023 0 01.387-9.517 8 8 0 0112.733.387l-1.414 1.414a6 6 0 00-.292 7.13l.006.006a6 6 0 007.13-.292l1.414-1.414a8 8 0 01-9.517.387 8.023 8.023 0 01-5.657-5.657m5.657 5.657l-2.828 2.828M11.42 15.17L8.592 12.34"/></svg>`,
+    terms: `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>`,
+    privacy: `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>`,
+};
+
+const pageColors: Record<string, string> = {
+    "return-policy": "bg-amber-50 border-amber-200 text-amber-700",
+    delivery: "bg-blue-50 border-blue-200 text-blue-700",
+    refund: "bg-emerald-50 border-emerald-200 text-emerald-700",
+    workdays: "bg-violet-50 border-violet-200 text-violet-700",
+    "store-hours": "bg-rose-50 border-rose-200 text-rose-700",
+    maintenance: "bg-teal-50 border-teal-200 text-teal-700",
+    terms: "bg-slate-50 border-slate-200 text-slate-700",
+    privacy: "bg-indigo-50 border-indigo-200 text-indigo-700",
+};
+
+export async function getStaticPaths() {
+    const pages = await getCollection("infoPages");
+    const paths: {
+        params: { locale: string | undefined; slug: string };
+        props: { locale: string; page: (typeof pages)[number] };
+    }[] = [];
+
+    for (const page of pages) {
+        for (const locale of locales) {
+            paths.push({
+                params: {
+                    locale: locale === "en" ? undefined : locale,
+                    slug: page.data.slug,
+                },
+                props: { locale, page },
+            });
+        }
+    }
+    return paths;
+}
+
+const { locale, page } = Astro.props;
+const t = await getTranslations(locale);
+const { Content } = await render(page);
+const pageTitle = page.data.title[locale as keyof typeof page.data.title] || page.data.title.en;
+
+const icon = pageIcons[page.data.slug] || pageIcons["return-policy"];
+const colorClass = pageColors[page.data.slug] || pageColors["return-policy"];
+---
+
+<BaseLayout title={pageTitle} locale={locale}>
+  <section class="py-8 px-4 sm:px-6 lg:px-8 max-w-2xl mx-auto">
+    <div class:list={["rounded-xl border p-5 mb-6", colorClass]}>
+      <div class="flex items-center gap-3">
+        <Fragment set:html={icon} />
+        <h1 class="text-xl sm:text-2xl font-bold">{pageTitle}</h1>
+      </div>
+    </div>
+
+    <article class="info-content">
+      <Content />
+    </article>
+
+    <div class="mt-8 pt-6 border-t border-gray-100">
+      <a href={localizedPath("/", locale)} class="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-amber-600 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+        Back to Home
+      </a>
+    </div>
+  </section>
+
+  <style is:global>
+    .info-content h2 {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: #111827;
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .info-content h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1f2937;
+      margin-top: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+    .info-content p {
+      color: #4b5563;
+      line-height: 1.6;
+      margin-bottom: 0.75rem;
+      font-size: 0.9375rem;
+    }
+    .info-content ul, .info-content ol {
+      margin: 0.5rem 0;
+      padding-left: 1.25rem;
+    }
+    .info-content li {
+      color: #4b5563;
+      margin-bottom: 0.375rem;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+    }
+    .info-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.75rem 0;
+      font-size: 0.875rem;
+    }
+    .info-content th {
+      text-align: left;
+      padding: 0.5rem 0.75rem;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      font-weight: 600;
+      color: #111827;
+    }
+    .info-content td {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #e5e7eb;
+      color: #374151;
+    }
+    .info-content strong {
+      color: #111827;
+      font-weight: 600;
+    }
+    .info-content a {
+      color: #d97706;
+      text-decoration: none;
+    }
+    .info-content a:hover {
+      text-decoration: underline;
+    }
+    .info-content hr {
+      border: none;
+      border-top: 1px solid #f3f4f6;
+      margin: 1.5rem 0;
+    }
+    .info-content em {
+      color: #6b7280;
+      font-size: 0.875rem;
+    }
+  </style>
+</BaseLayout>

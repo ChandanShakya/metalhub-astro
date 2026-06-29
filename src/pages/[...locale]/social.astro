@@ -1,4 +1,5 @@
 ---
+import { getCollection } from "astro:content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getTranslations, locales } from "../../lib/i18n";
 
@@ -11,9 +12,12 @@ export function getStaticPaths() {
 
 const { locale } = Astro.props;
 const t = await getTranslations(locale);
+
+const settingsEntries = await getCollection("settings");
+const site = settingsEntries[0]?.data;
 ---
+
 <BaseLayout title={t("social.title")} locale={locale}>
-  <!-- Warm connections for third-party embed scripts -->
   <link rel="preconnect" href="https://connect.facebook.net" />
   <link rel="preconnect" href="https://www.instagram.com" />
   <link rel="preconnect" href="https://www.tiktok.com" />
@@ -22,58 +26,64 @@ const t = await getTranslations(locale);
   <section class="py-8 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
     <h1 class="text-center mb-8 text-2xl sm:text-3xl font-extrabold">{t("social.title")}</h1>
 
-    <div class="mb-10 sm:mb-12">
-      <h2 class="text-lg sm:text-xl font-bold mb-4 flex items-center gap-2.5">
-        {t("social.facebook")}
-        <a href="https://www.facebook.com/profile.php?id=100092431583299" target="_blank" rel="noopener" class="text-xs sm:text-sm font-medium text-accent px-2 sm:px-2.5 py-1 border border-accent rounded-full transition-[colors,transform] hover:bg-accent hover:text-white hover:no-underline">
-          {t("social.follow")} ↗
-        </a>
-      </h2>
-      <div id="fb-page-plugin" class="w-full max-w-125 mx-auto relative" style="min-height:500px;">
-        <div id="fb-root"></div>
-        <div class="fb-page"
-          data-href="https://www.facebook.com/profile.php?id=100092431583299"
-          data-tabs="timeline"
-          data-width="500"
-          data-height="500"
-          data-small-header="false"
-          data-adapt-container-width="true"
-          data-hide-cover="false"
-          data-show-facepile="true">
+    {site?.facebookUrl && (
+      <div class="mb-10 sm:mb-12">
+        <h2 class="text-lg sm:text-xl font-bold mb-4 flex items-center gap-2.5">
+          {t("social.facebook")}
+          <a href={site.facebookUrl} target="_blank" rel="noopener" class="text-xs sm:text-sm font-medium text-accent px-2 sm:px-2.5 py-1 border border-accent rounded-full transition-[colors,transform] hover:bg-accent hover:text-white hover:no-underline">
+            {t("social.follow")} ↗
+          </a>
+        </h2>
+        <div id="fb-page-plugin" class="w-full max-w-125 mx-auto relative" style="min-height:500px;">
+          <div id="fb-root"></div>
+          <div class="fb-page"
+            data-href={site.facebookUrl}
+            data-tabs="timeline"
+            data-width="500"
+            data-height="500"
+            data-small-header="false"
+            data-adapt-container-width="true"
+            data-hide-cover="false"
+            data-show-facepile="true">
+          </div>
+          <div class="skeleton absolute inset-0 z-10 rounded-lg" style="height:500px;"></div>
         </div>
-        <div class="skeleton absolute inset-0 z-10 rounded-lg" style="height:500px;"></div>
       </div>
-    </div>
+    )}
 
-    <div class="mb-10 sm:mb-12">
-      <h2 class="text-lg sm:text-xl font-bold mb-4 flex items-center gap-2.5">
-        {t("social.instagram")}
-        <a href="https://www.instagram.com/metal_hub.np" target="_blank" rel="noopener" class="text-xs sm:text-sm font-medium text-accent px-2 sm:px-2.5 py-1 border border-accent rounded-full transition-[colors,transform] hover:bg-accent hover:text-white hover:no-underline">
-          {t("social.follow")} ↗
-        </a>
-      </h2>
-      <div id="ig-container" class="w-full max-w-125 mx-auto relative" style="min-height:420px;">
-        <blockquote class="instagram-media" data-instgrm-permalink="https://www.instagram.com/metal_hub.np/" data-instgrm-version="14" style="max-width:100%;min-width:unset;width:100%;"></blockquote>
-        <div class="skeleton absolute inset-0 z-10 rounded-lg" style="height:420px;"></div>
+    {site?.instagramUrl && (
+      <div class="mb-10 sm:mb-12">
+        <h2 class="text-lg sm:text-xl font-bold mb-4 flex items-center gap-2.5">
+          {t("social.instagram")}
+          <a href={site.instagramUrl} target="_blank" rel="noopener" class="text-xs sm:text-sm font-medium text-accent px-2 sm:px-2.5 py-1 border border-accent rounded-full transition-[colors,transform] hover:bg-accent hover:text-white hover:no-underline">
+            {t("social.follow")} ↗
+          </a>
+        </h2>
+        <div id="ig-container" class="w-full max-w-125 mx-auto relative" style="min-height:420px;">
+          <blockquote class="instagram-media" data-instgrm-permalink={`${site.instagramUrl}/`} data-instgrm-version="14" style="max-width:100%;min-width:unset;width:100%;"></blockquote>
+          <div class="skeleton absolute inset-0 z-10 rounded-lg" style="height:420px;"></div>
+        </div>
       </div>
-    </div>
+    )}
 
-    <div class="mb-10 sm:mb-12">
-      <h2 class="text-lg sm:text-xl font-bold mb-4 flex items-center gap-2.5">
-        {t("social.tiktok")}
-        <a href="https://www.tiktok.com/@metalhub.np" target="_blank" rel="noopener" class="text-xs sm:text-sm font-medium text-accent px-2 sm:px-2.5 py-1 border border-accent rounded-full transition-[colors,transform] hover:bg-accent hover:text-white hover:no-underline">
-          {t("social.follow")} ↗
-        </a>
-      </h2>
-      <div id="tt-container" class="w-full max-w-125 mx-auto relative" style="min-height:480px;">
-        <blockquote class="tiktok-embed" cite="https://www.tiktok.com/@metalhub.np" data-unique-id="metalhub.np" data-embed-from="embed_page" data-embed-type="creator" style="max-width:100%;min-width:288px;">
-          <section>
-            <a target="_blank" href="https://www.tiktok.com/@metalhub.np?refer=creator_embed">@metalhub.np</a>
-          </section>
-        </blockquote>
-        <div class="skeleton absolute inset-0 z-10 rounded-lg" style="height:480px;"></div>
+    {site?.tiktokUrl && (
+      <div class="mb-10 sm:mb-12">
+        <h2 class="text-lg sm:text-xl font-bold mb-4 flex items-center gap-2.5">
+          {t("social.tiktok")}
+          <a href={site.tiktokUrl} target="_blank" rel="noopener" class="text-xs sm:text-sm font-medium text-accent px-2 sm:px-2.5 py-1 border border-accent rounded-full transition-[colors,transform] hover:bg-accent hover:text-white hover:no-underline">
+            {t("social.follow")} ↗
+          </a>
+        </h2>
+        <div id="tt-container" class="w-full max-w-125 mx-auto relative" style="min-height:480px;">
+          <blockquote class="tiktok-embed" cite={site.tiktokUrl} data-unique-id="metalhub.np" data-embed-from="embed_page" data-embed-type="creator" style="max-width:100%;min-width:288px;">
+            <section>
+              <a target="_blank" href={`${site.tiktokUrl}?refer=creator_embed`}>@metalhub.np</a>
+            </section>
+          </blockquote>
+          <div class="skeleton absolute inset-0 z-10 rounded-lg" style="height:480px;"></div>
+        </div>
       </div>
-    </div>
+    )}
   </section>
 
   <script>
